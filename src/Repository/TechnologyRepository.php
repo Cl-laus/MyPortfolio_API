@@ -3,31 +3,20 @@ namespace App\Repository;
 
 use App\Entity\Technology;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Query\Expr\Base;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
  * @extends ServiceEntityRepository<Technology>
  */
-class TechnologyRepository extends ServiceEntityRepository
+class TechnologyRepository extends BaseRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Technology::class);
     }
 
-    
-    public function delete(Technology $entity): void
-    {
-        $this->getEntityManager()->remove($entity);
-        $this->getEntityManager()->flush();
-    }
-
-    public function save(Technology $entity): void
-    {
-        $this->getEntityManager()->persist($entity);
-        $this->getEntityManager()->flush();
-
-    }
+   
 
     //    /**
     //     * @return Technology[] Returns an array of Technology objects

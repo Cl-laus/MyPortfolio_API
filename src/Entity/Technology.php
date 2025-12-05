@@ -1,9 +1,9 @@
 <?php
-
 namespace App\Entity;
 
 use App\Repository\TechnologyRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: TechnologyRepository::class)]
 class Technology
@@ -11,17 +11,22 @@ class Technology
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    private ?int $id = null;
 
+    #[Groups(['technology:read', 'project:read'])]
+    private ?int $id = null;
+    #[Groups(['technology:read', 'technology:write', 'project:read'])]
     #[ORM\Column(length: 255)]
     private ?string $name = null;
-
+    #[Groups(['technology:read', 'technology:write', 'project:read'])]
     #[ORM\Column(length: 255)]
     private ?string $icon = null;
-
+    #[Groups(['technology:read', 'technology:write', 'project:read'])]
     #[ORM\Column(length: 50)]
     private ?string $category = null;
 
+
+
+    
     public function getId(): ?int
     {
         return $this->id;
