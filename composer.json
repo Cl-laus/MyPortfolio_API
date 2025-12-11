@@ -21,6 +21,7 @@
         "symfony/runtime": "8.0.*",
         "symfony/serializer": "8.0.*",
         "symfony/validator": "8.0.*",
+        "symfony/var-dumper": "8.0.*",
         "symfony/yaml": "8.0.*"
     },
     "config": {
