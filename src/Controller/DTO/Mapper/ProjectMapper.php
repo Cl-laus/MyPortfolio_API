@@ -6,6 +6,11 @@ use App\Controller\DTO\UpdateProjectDTO;
 use App\Entity\Project;
 use App\Repository\TechnologyRepository;
 
+
+
+//mapper pour convertir les DTO en entités Project et vice versa
+///il utilise le TechnologyRepository pour gérer les relations entre Project et Technology
+
 class ProjectMapper
 {
     public function __construct(private TechnologyRepository $technologyRepository)
@@ -60,9 +65,8 @@ class ProjectMapper
             $project->removeTechnology($tech);
         }
 
-        if (empty($technologyIds)) {
-            return;
-        }
+        if (empty($technologyIds)) return;
+        
 
         //on récupère les technologies correspondantes aux ids et les mets dans un tableau
         $technologies = $this->technologyRepository->findBy(['id' => $technologyIds]);
