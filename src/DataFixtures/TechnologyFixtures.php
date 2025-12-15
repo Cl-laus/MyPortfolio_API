@@ -9,19 +9,16 @@ class TechnologyFixtures extends Fixture
 {
     public function load(ObjectManager $manager): void
     {
-        $tech = new Technology();
-        $tech->setName('Symfony');
-        $tech->setIcon('symfony-icon.png');
-        $tech->setCategory('Framework');
+        for ($i = 0; $i < 5; $i++) {
+            $tech = new Technology();
+            $tech->setName('Technology ' . $i);
+            $tech->setIcon('icon' . $i . '.png');
+            $tech->setCategory('Category ' . $i);
 
-        $manager->persist($tech);
 
-        $tech2 = new Technology();
-        $tech2->setName('React');
-        $tech2->setIcon('react-icon.png');
-        $tech2->setCategory('Library');
-
-        $manager->persist($tech2);
+            $manager->persist($tech);
+            $this->addReference('tech-' . $i, $tech);
+        }
 
         $manager->flush();
     }

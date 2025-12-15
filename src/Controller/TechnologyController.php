@@ -65,7 +65,7 @@ final class TechnologyController extends AbstractController
         return new JsonResponse($data, JsonResponse::HTTP_CREATED, [], true);
     }
 
-    #[Route('/{id}', name: '_update', methods: ['PATCH'])]
+    #[Route('/{id}', name: '_update', methods: ['PATCH'],requirements: ['id' => Requirement::DIGITS])]
     public function update(
         #[MapEntity] Technology $technology,
         Request $request
@@ -76,8 +76,9 @@ final class TechnologyController extends AbstractController
             'json',
             [
                 AbstractNormalizer::OBJECT_TO_POPULATE => $technology,
-                'groups' => ['technology:write'],
+                AbstractNormalizer::GROUPS => ['technology:write'],
             ]
+            
         );
 
         $this->technologyRepository->save($technology);

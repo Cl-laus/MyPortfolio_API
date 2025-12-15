@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Repository;
 
 use App\Entity\Project;
@@ -14,6 +13,14 @@ class ProjectRepository extends BaseRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Project::class);
+    }
+    public function findTop3Projects(): array// on renvois les 3 premiers projets
+    {
+        return $this->createQueryBuilder('p')
+            ->orderBy('p.displayOrder', 'ASC')
+            ->setMaxResults(3)
+            ->getQuery()
+            ->getResult();
     }
 
     //    /**
