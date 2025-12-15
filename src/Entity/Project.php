@@ -18,22 +18,22 @@ class Project
     #[Groups(['project:list', 'project:read'])]
     private ?int $id = null;
 
-    #[Groups(['project:list', 'project:read', 'project:write'])]
+    #[Groups(['project:list', 'project:read'])]
     #[ORM\Column(type: Types::SMALLINT)]
     private ?int $displayOrder = null;
 
-    #[Groups(['project:list', 'project:read', 'project:write'])]
+    #[Groups(['project:list', 'project:read'])]
     #[ORM\Column(length: 150)]
     private ?string $title = null;
 
-    #[Groups(['project:list', 'project:read', 'project:write'])]
+    #[Groups(['project:list', 'project:read'])]
     #[ORM\Column(length: 255)]
     private ?string $summary = null;
 
-    #[Groups(['project:read', 'project:write'])]
+    #[Groups(['project:read'])]
     #[ORM\Column(type: Types::TEXT)]
     private ?string $description = null;
-
+    #[Groups(['project:read'])]
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $links = null;
 
@@ -63,29 +63,26 @@ class Project
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
     }
-    
+
     #[ORM\PreUpdate]
     public function setUpdatedAtValue(): void
     {
         $this->updatedAt = new \DateTimeImmutable();
     }
-    
+
     // ----- Getters & Setters -----
-    
-    
-        // ----- Links -----
-        //permet de sérialiser $links mais  pas d’instancier d’objet pour le POST/PATCH.
-        #[Groups(['project:read', 'project:write'])]
-        public function getLinks(): ?array
-        {
-            return $this->links;
-        }
-    
-        public function setLinks(?array $links): static
-        {
-            $this->links = $links;
-            return $this;
-        }
+
+  
+    public function getLinks(): ?array
+    {
+        return $this->links;
+    }
+
+    public function setLinks(?array $links): static
+    {
+        $this->links = $links;
+        return $this;
+    }
     public function getId(): ?int
     {
         return $this->id;
