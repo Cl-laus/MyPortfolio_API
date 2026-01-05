@@ -7,12 +7,10 @@ use App\Controller\DTO\UpdateProjectDTO;
 use App\Repository\ProjectRepository;
 use App\Entity\Project;
 
-
-//service pour gérer la logique métier liée aux projets
-//recoit un DTO depuis le controller, utilise le mapper pour convertir le DTO en entité Project
-//utilise le repository pour persister l'entité
-//retourne l'entité au controller
-//pas de logique métier complexe pour l'instant, mais cette structure permet de la rajouter facilement à l'avenir
+/**
+ * Service pour gérer la logique métier liée aux projets
+ * Gère la création, mise à jour, suppression et réorganisation des projets
+ */
 class ProjectsManager
 {
     public function __construct(
@@ -20,21 +18,24 @@ class ProjectsManager
         private ProjectMapper $projectMapper
     ) {}
 
-
-
-////////// create //////////
-
+    ////////// CREATE //////////
 
     public function create(CreateProjectDTO $dto): Project
     {
+        // Récupérer le plus grand displayOrder existant
+        $maxOrder = $this->projectRepository->getMaxDisplayOrder();
+        
         $project = $this->projectMapper->createFromDto($dto);
-        $this->projectRepository->save($project); 
+        
+        // Assigner automatiquement le prochain ordre disponible
+        $project->setDisplayOrder($maxOrder + 1);
+        
+        $this->projectRepository->save($project);
+        
         return $project;
     }
 
-
-////////// update //////////
-
+    ////////// UPDATE //////////
 
     public function update(int $id, UpdateProjectDTO $dto): Project
     {
@@ -43,13 +44,20 @@ class ProjectsManager
             throw new \DomainException('Projet introuvable.');
         }
 
+        // Si l'ordre change, on réorganise AVANT de mapper
+        if ($dto->displayOrder !== null && $dto->displayOrder !== $project->getDisplayOrder()) {
+            $this->validateDisplayOrder($dto->displayOrder);
+            $this->reorderProjects($project, $dto->displayOrder);
+        }
+
+        // Mapper les autres modifications
         $this->projectMapper->updateFromDto($dto, $project);
-        $this->projectRepository->save($project); 
+        $this->projectRepository->save($project);
+        
         return $project;
     }
 
-/////////// delete //////////
-
+    ////////// DELETE //////////
 
     public function delete(int $id): void
     {
@@ -58,6 +66,80 @@ class ProjectsManager
             throw new \DomainException('Projet introuvable.');
         }
 
-        $this->projectRepository->delete($project); 
+        $deletedOrder = $project->getDisplayOrder();
+
+        // Supprimer le projet
+        $this->projectRepository->delete($project);
+
+        // Combler le "trou" : décaler tous les projets après celui supprimé
+        $this->fillGapOrderAfterDeletion($deletedOrder);
+    }
+
+    ////////// PRIVATE METHODS //////////
+
+    /**
+     * Réorganise les projets quand un projet change de position
+     */
+    private function reorderProjects(Project $project, int $newOrder): void
+    {
+        $oldOrder = $project->getDisplayOrder();
+        $allProjects = $this->projectRepository->findAll();
+        
+        foreach ($allProjects as $p) {
+            // On skip le projet qu'on est en train de déplacer
+            if ($p->getId() === $project->getId()) {
+                continue;
+            }
+            
+            $currentOrder = $p->getDisplayOrder();
+            
+            // Cas 1 : Projet déplacé vers le BAS (ex: 1 → 3)
+            // Les projets entre 2 et 3 remontent d'une position
+            if ($newOrder > $oldOrder 
+            && $currentOrder > $oldOrder 
+            && $currentOrder <= $newOrder) {
+                $p->setDisplayOrder($currentOrder - 1);
+                $this->projectRepository->save($p);
+            }
+            // Cas 2 : Projet déplacé vers le HAUT (ex: 3 → 1)
+            // Les projets entre 1 et 2 descendent d'une position
+            elseif ($newOrder < $oldOrder 
+            && $currentOrder >= $newOrder 
+            && $currentOrder < $oldOrder) {
+                $p->setDisplayOrder($currentOrder + 1);
+                $this->projectRepository->save($p);
+            }
+        }
+        
+        // Appliquer le nouvel ordre au projet
+        $project->setDisplayOrder($newOrder);
+    }
+
+    /**
+     * Comble le trou laissé par un projet supprimé
+     */
+    private function fillGapOrderAfterDeletion(int $deletedOrder): void
+    {
+        $projectsAfter = $this->projectRepository->findProjectsAfterOrder($deletedOrder);
+        
+        foreach ($projectsAfter as $project) {
+            $project->setDisplayOrder($project->getDisplayOrder() - 1);
+            $this->projectRepository->save($project);
+        }
+    }
+
+    /**
+     * Valide que le displayOrder est dans une plage acceptable
+     */
+    private function validateDisplayOrder(int $order): void
+    {
+        if ($order < 1) {
+            throw new \DomainException('L\'ordre d\'affichage doit être supérieur ou égal à 1.');
+        }
+
+        $maxOrder = $this->projectRepository->getMaxDisplayOrder();
+        if ($order > $maxOrder) {
+            throw new \DomainException("L'ordre d'affichage ne peut pas dépasser {$maxOrder}.");
+        }
     }
 }

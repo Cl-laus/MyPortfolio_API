@@ -14,7 +14,11 @@ class ProjectRepository extends BaseRepository
     {
         parent::__construct($registry, Project::class);
     }
-    public function findTop3Projects(): array// on renvois les 3 premiers projets
+
+/**
+ * Récupère les 3 projets avec le plus petit displayOrder
+ */
+    public function findTop3Projects(): array
     {
         return $this->createQueryBuilder('p')
             ->orderBy('p.displayOrder', 'ASC')
@@ -22,7 +26,32 @@ class ProjectRepository extends BaseRepository
             ->getQuery()
             ->getResult();
     }
+/**
+ * Récupère le plus grand displayOrder existant
+ * Retourne 0 si aucun projet n'existe
+ */
+    public function getMaxDisplayOrder(): int
+    {
+        $result = $this->createQueryBuilder('p')
+            ->select('MAX(p.displayOrder)')
+            ->getQuery()
+            ->getSingleScalarResult();
 
+        return $result ?? 0;
+    }
+
+/**
+ * Trouve tous les projets ayant un displayOrder supérieur à l'ordre donné
+ */
+    public function findProjectsAfterOrder(int $order): array
+    {
+        return $this->createQueryBuilder('p')
+            ->where('p.displayOrder > :order')
+            ->setParameter('order', $order)
+            ->orderBy('p.displayOrder', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
     //    /**
     //     * @return Project[] Returns an array of Project objects
     //     */

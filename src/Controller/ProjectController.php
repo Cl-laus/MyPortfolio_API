@@ -5,15 +5,14 @@ use App\Controller\DTO\CreateProjectDTO;
 use App\Controller\DTO\UpdateProjectDTO;
 use App\Entity\Project;
 use App\Repository\ProjectRepository;
-
 use App\Services\ProjectsManager;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-
 
 #[Route('/api/projects', name: 'api_projects_')]
 final class ProjectController extends AbstractController
@@ -34,8 +33,14 @@ final class ProjectController extends AbstractController
         $projects = $this->projectRepository->findTop3Projects();
         return $this->json($projects, 200, [], ['groups' => 'project:list']);
     }
+    #[Route('/all', name: '_all', methods: ['GET'])]
+    public function showListAll(): JsonResponse
+    {
+        $projects = $this->projectRepository->findAll();
+        return $this->json($projects, 200, [], ['groups' => 'project:list']);
+    }
 
-    #[Route('/{id}', name: '_detail', methods: ['GET'])]
+    #[Route('/{id}', name: '_detail', methods: ['GET'], requirements: ['id' => Requirement::DIGITS])]
     public function showDetail(#[MapEntity] Project $project): JsonResponse
     {
         return $this->json($project, 200, [], ['groups' => 'project:read']);
@@ -43,7 +48,7 @@ final class ProjectController extends AbstractController
 
     ////////////////////// CREATE, UPDATE, DELETE /////////////////////////////////
     // On utilise des DTO pour les opérations de création et de mise à jour
-    // Le controller vérifie le DTO 
+    // Le controller vérifie le DTO
     // Il l'envoie au ProjectManager ; qui lui-même appelle le mapper et renvoie l'entité au controller
     // Le controller sérialise l'entité renvoyée par le service et la retourne en réponse
 
@@ -53,7 +58,7 @@ final class ProjectController extends AbstractController
         // Validation des données reçues
         $errors = $this->validator->validate($dto);
         if (count($errors) > 0) {
-            return $this->json(['errors' => (string)$errors], 400);
+            return $this->json(['errors' => (string) $errors], 400);
         }
 
         // Appel du manager pour créer le projet
@@ -68,13 +73,13 @@ final class ProjectController extends AbstractController
         return $this->json($project, 201, [], ['groups' => 'project:read']);
     }
 
-    #[Route('/{id}', methods: ['PATCH'])]
+    #[Route('/{id}', methods: ['PATCH'], requirements: ['id' => Requirement::DIGITS])]
     public function update(int $id, #[MapRequestPayload] UpdateProjectDTO $dto): JsonResponse
     {
         // Validation des données reçues
         $errors = $this->validator->validate($dto);
         if (count($errors) > 0) {
-            return $this->json(['errors' => (string)$errors], 400);
+            return $this->json(['errors' => (string) $errors], 400);
         }
 
         // Appel du manager pour mettre à jour le projet
@@ -88,7 +93,7 @@ final class ProjectController extends AbstractController
         return $this->json($project, 200, [], ['groups' => 'project:read']);
     }
 
-    #[Route('/{id}', methods: ['DELETE'])]
+    #[Route('/{id}', methods: ['DELETE'], requirements: ['id' => Requirement::DIGITS])]
     public function delete(int $id): JsonResponse
     {
         // Appel du manager pour supprimer le projet et avoir l'erreur si elle existe

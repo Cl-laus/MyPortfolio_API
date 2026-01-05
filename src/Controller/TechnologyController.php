@@ -78,7 +78,9 @@ final class TechnologyController extends AbstractController
                 AbstractNormalizer::OBJECT_TO_POPULATE => $technology,
                 AbstractNormalizer::GROUPS => ['technology:write'],
             ]
-            
+            // on dezerialize les données contenues dans la requête,
+            //on met à jour l'entité Technology existante
+            //on serialise l'entité mise à jour pour la renvoyer en réponse
         );
 
         $this->technologyRepository->save($technology);
