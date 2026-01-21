@@ -12,7 +12,7 @@ use App\Repository\TechnologyRepository;
  * Service pour gérer la logique métier liée aux projets
  * Gère la création, mise à jour, suppression et réorganisation des projets en appelant d'autres services
  */
-class ProjectsManager
+class ProjectManager
 {
     public function __construct(
         private ProjectRepository $projectRepository,
