@@ -52,9 +52,17 @@ class Project
     #[Groups(['project:read'])]
     private Collection $technologies;
 
+    /**
+     * @var Collection<int, Image>
+     */
+    #[ORM\OneToMany(targetEntity: Image::class, mappedBy: 'project', orphanRemoval: true)]
+    #[Groups(['project:read'])]
+    private Collection $images;
+
     public function __construct()
     {
         $this->technologies = new ArrayCollection();
+        $this->images = new ArrayCollection();
     }
 
     #[ORM\PrePersist]
@@ -175,6 +183,36 @@ class Project
     public function removeTechnology(Technology $technology): static
     {
         $this->technologies->removeElement($technology);
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Image>
+     */
+    public function getImages(): Collection
+    {
+        return $this->images;
+    }
+
+    public function addImage(Image $image): static
+    {
+        if (!$this->images->contains($image)) {
+            $this->images->add($image);
+            $image->setProject($this);
+        }
+
+        return $this;
+    }
+
+    public function removeImage(Image $image): static
+    {
+        if ($this->images->removeElement($image)) {
+            // set the owning side to null (unless already changed)
+            if ($image->getProject() === $this) {
+                $image->setProject(null);
+            }
+        }
+
         return $this;
     }
 }

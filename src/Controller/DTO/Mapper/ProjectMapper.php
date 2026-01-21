@@ -4,36 +4,41 @@ namespace App\Controller\DTO\Mapper;
 use App\Controller\DTO\CreateProjectDTO;
 use App\Controller\DTO\UpdateProjectDTO;
 use App\Entity\Project;
-use App\Repository\TechnologyRepository;
+use App\Entity\Technology;
 
-
-
-//mapper pour convertir les DTO en entités Project et vice versa
-///il utilise le TechnologyRepository pour gérer les relations entre Project et Technology
+/**
+ * Mapper pour convertir les DTO recus en entités Project
+ */
 
 class ProjectMapper
 {
-    public function __construct(private TechnologyRepository $technologyRepository)
-    {}
-
-    public function createFromDto(CreateProjectDTO $dto): Project
+    /**
+     * Crée une nouvelle entité Project à partir d'un DTO
+     * 
+     * @param Technology[] $technologies Tableau d'entités Technology déjà validées par le ProjectManager
+     */
+    public function createFromDto(CreateProjectDTO $dto, array $technologies): Project
     {
         $project = new Project();
-
         $project
             ->setTitle($dto->title)
             ->setSummary($dto->summary)
             ->setDescription($dto->description)
             ->setLinks($dto->links ?? []);
-//methode pour rajouter les technologies liées
-        $this->syncTechnologies($project, $dto->technologies);
 
+        // Ajouter les technologies
+        foreach ($technologies as $technology) {
+            $project->addTechnology($technology);
+        }
         return $project;
     }
 
-    public function updateFromDto(UpdateProjectDTO $dto, Project $project): Project
+    /**
+     * Met à jour une entité Project existante à partir d'un DTO
+     */
+    public function updateFromDto(UpdateProjectDTO $dto, Project $project, ?array $technologies = null): Project
     {
-        //on met a jour seulement les champs non nuls
+        // Mise à jour des champs si non null
         if ($dto->title !== null) {
             $project->setTitle($dto->title);
         }
@@ -50,35 +55,19 @@ class ProjectMapper
             $project->setLinks($dto->links);
         }
 
-        if ($dto->technologies !== null) {
-            $this->syncTechnologies($project, $dto->technologies);
+        // Mise à jour des technologies si non null
+        if ($technologies !== null) {
+            // Vider toutes les technologies actuelles
+            foreach ($project->getTechnologies() as $tech) {
+                $project->removeTechnology($tech);
+            }
+
+            // Ajouter les nouvelles technologies
+            foreach ($technologies as $technology) {
+                $project->addTechnology($technology);
+            }
         }
 
         return $project;
-    }
-
-    private function syncTechnologies(Project $project, array $technologyIds): void
-    {
-
-        foreach ($project->getTechnologies() as $tech) {
-            //on vide toutes les technologies actuelles
-            $project->removeTechnology($tech);
-        }
-
-        if (empty($technologyIds)) return;
-        
-
-        //on récupère les technologies correspondantes aux ids et les mets dans un tableau
-        $technologies = $this->technologyRepository->findBy(['id' => $technologyIds]);
-
-        //on vérifie que le nombre de technologies récupérées correspond au nombre d'ids fournis
-        //si non, il y a eu une erreur (id invalide)
-        if (count($technologies) !== count($technologyIds)) {
-            throw new \DomainException('Une ou plusieurs technologies sont invalides.');
-        }
-        //on ajoute les technologies à l'entité Project
-        foreach ($technologies as $tech) {
-            $project->addTechnology($tech);
-        }
     }
 }

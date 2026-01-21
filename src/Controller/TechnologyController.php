@@ -23,7 +23,7 @@ final class TechnologyController extends AbstractController
     ) {
     }
 
-    #[Route('', name: '_list', methods: ['GET'])]
+    #[Route('', name: 'list', methods: ['GET'])]
     public function showList(): JsonResponse
     {
         $technologies = $this->technologyRepository->findAll();
@@ -36,7 +36,7 @@ final class TechnologyController extends AbstractController
         return new JsonResponse($data, JsonResponse::HTTP_OK, [], true);
     }
 
-    #[Route('/{id}', name: '_detail', methods: ['GET'], requirements: ['id' => Requirement::DIGITS])]
+    #[Route('/{id}', name: 'detail', methods: ['GET'], requirements: ['id' => Requirement::DIGITS])]
     public function showDetail(
         #[MapEntity] Technology $technology
     ): JsonResponse {
@@ -49,7 +49,7 @@ final class TechnologyController extends AbstractController
         return new JsonResponse($data, JsonResponse::HTTP_OK, [], true);
     }
 
-    #[Route('', name: '_create', methods: ['POST'])]
+    #[Route('', name: 'create', methods: ['POST'])]
     public function create(
         #[MapRequestPayload(serializationContext: ['groups' => 'technology:write'])]
         Technology $newTechnology
@@ -65,7 +65,7 @@ final class TechnologyController extends AbstractController
         return new JsonResponse($data, JsonResponse::HTTP_CREATED, [], true);
     }
 
-    #[Route('/{id}', name: '_update', methods: ['PATCH'],requirements: ['id' => Requirement::DIGITS])]
+    #[Route('/{id}', name: 'update', methods: ['PATCH'],requirements: ['id' => Requirement::DIGITS])]
     public function update(
         #[MapEntity] Technology $technology,
         Request $request
@@ -88,7 +88,7 @@ final class TechnologyController extends AbstractController
         return $this->showDetail($technology);
     }
 
-    #[Route('/{id}', name: '_delete', methods: ['DELETE'], requirements: ['id' => Requirement::DIGITS])]
+    #[Route('/{id}', name: 'delete', methods: ['DELETE'], requirements: ['id' => Requirement::DIGITS])]
     public function delete(
         #[MapEntity] Technology $technology
     ): JsonResponse {

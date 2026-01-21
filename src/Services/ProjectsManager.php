@@ -4,34 +4,42 @@ namespace App\Services;
 use App\Controller\DTO\CreateProjectDTO;
 use App\Controller\DTO\Mapper\ProjectMapper;
 use App\Controller\DTO\UpdateProjectDTO;
-use App\Repository\ProjectRepository;
 use App\Entity\Project;
+use App\Repository\ProjectRepository;
+use App\Repository\TechnologyRepository;
 
 /**
  * Service pour gérer la logique métier liée aux projets
- * Gère la création, mise à jour, suppression et réorganisation des projets
+ * Gère la création, mise à jour, suppression et réorganisation des projets en appelant d'autres services
  */
 class ProjectsManager
 {
     public function __construct(
         private ProjectRepository $projectRepository,
-        private ProjectMapper $projectMapper
+        private TechnologyRepository $technologyRepository,
+        private ProjectMapper $projectMapper,
+        private DisplayOrderManager $displayOrderManager
     ) {}
 
     ////////// CREATE //////////
 
     public function create(CreateProjectDTO $dto): Project
     {
-        // Récupérer le plus grand displayOrder existant
+        // 1. Valider et récupérer les technologies
+        $technologies = $this->validateAndGetTechnologies($dto->technologies);
+
+        // 2. Récupérer le plus grand displayOrder existant en BDD
         $maxOrder = $this->projectRepository->getMaxDisplayOrder();
-        
-        $project = $this->projectMapper->createFromDto($dto);
-        
-        // Assigner automatiquement le prochain ordre disponible
+
+        // 3. Transformer le DTO en entité via le mapper
+        $project = $this->projectMapper->createFromDto($dto, $technologies);
+
+        // 4. Assigner automatiquement le prochain ordre disponible
         $project->setDisplayOrder($maxOrder + 1);
-        
+
+        // 5. Persister le projet
         $this->projectRepository->save($project);
-        
+
         return $project;
     }
 
@@ -39,21 +47,38 @@ class ProjectsManager
 
     public function update(int $id, UpdateProjectDTO $dto): Project
     {
+        //1. Récupérer le projet existant ou erreur
         $project = $this->projectRepository->find($id);
-        if (!$project) {
+        if (! $project) {
             throw new \DomainException('Projet introuvable.');
         }
 
-        // Si l'ordre change, on réorganise AVANT de mapper
-        if ($dto->displayOrder !== null && $dto->displayOrder !== $project->getDisplayOrder()) {
-            $this->validateDisplayOrder($dto->displayOrder);
-            $this->reorderProjects($project, $dto->displayOrder);
+        //2. Si l'ordre change, on réorganise les autres projets
+        $dtoOrder = $dto->displayOrder;
+        $actualOrder = $project->getDisplayOrder();
+        $maxOrder = $this->projectRepository->getMaxDisplayOrder();
+
+        if ($dtoOrder== null && $dtoOrder !== $actualOrder) {
+            $this->displayOrderManager->validateDisplayOrder($dtoOrder, $maxOrder);
+
+            $this->displayOrderManager->reOrder(
+                $this->projectRepository->findAll(),
+                $actualOrder,
+                $dtoOrder
+            );
         }
 
-        // Mapper les autres modifications
-        $this->projectMapper->updateFromDto($dto, $project);
+        //3. Valider et récupérer les technologies si elles existent dans le DTO
+        $technologies = null;
+        if ($dto->technologies !== null) {
+            $technologies = $this->validateAndGetTechnologies($dto->technologies);
+        }
+
+        // 4. Transformer le DTO en entité via le mapper
+        $this->projectMapper->updateFromDto($dto, $project, $technologies);
+        // 5. Persister le projet
         $this->projectRepository->save($project);
-        
+
         return $project;
     }
 
@@ -61,85 +86,46 @@ class ProjectsManager
 
     public function delete(int $id): void
     {
+        //1. Récupérer le projet existant ou erreur
         $project = $this->projectRepository->find($id);
-        if (!$project) {
+        if (! $project) {
             throw new \DomainException('Projet introuvable.');
         }
-
+        //2. Récupérer l'ordre du projet avant suppression
         $deletedOrder = $project->getDisplayOrder();
 
-        // Supprimer le projet
+        //3.Supprimer le projet
         $this->projectRepository->delete($project);
 
-        // Combler le "trou" : décaler tous les projets après celui supprimé
-        $this->fillGapOrderAfterDeletion($deletedOrder);
+        //4.Combler le "trou" : décaler tous les projets après celui supprimé
+        $this->displayOrderManager->fillGapAfterDeletion(
+            $this->projectRepository->findAll(),
+            $deletedOrder
+        );
     }
 
-    ////////// PRIVATE METHODS //////////
+    
+    ///////////////// PRIVATE METHODS //////////
 
     /**
-     * Réorganise les projets quand un projet change de position
+     * Valide et récupère les entités Technology à partir d'un tableau d'IDs
+     *
+     * @param int[] recoit des IDs de technologies
+     * @return Technology[] renvoit des entités Technology
+     * @throws \DomainException Si une ou plusieurs technologies sont invalides
      */
-    private function reorderProjects(Project $project, int $newOrder): void
+    private function validateAndGetTechnologies(array $technologyIds): array
     {
-        $oldOrder = $project->getDisplayOrder();
-        $allProjects = $this->projectRepository->findAll();
-        
-        foreach ($allProjects as $p) {
-            // On skip le projet qu'on est en train de déplacer
-            if ($p->getId() === $project->getId()) {
-                continue;
-            }
-            
-            $currentOrder = $p->getDisplayOrder();
-            
-            // Cas 1 : Projet déplacé vers le BAS (ex: 1 → 3)
-            // Les projets entre 2 et 3 remontent d'une position
-            if ($newOrder > $oldOrder 
-            && $currentOrder > $oldOrder 
-            && $currentOrder <= $newOrder) {
-                $p->setDisplayOrder($currentOrder - 1);
-                $this->projectRepository->save($p);
-            }
-            // Cas 2 : Projet déplacé vers le HAUT (ex: 3 → 1)
-            // Les projets entre 1 et 2 descendent d'une position
-            elseif ($newOrder < $oldOrder 
-            && $currentOrder >= $newOrder 
-            && $currentOrder < $oldOrder) {
-                $p->setDisplayOrder($currentOrder + 1);
-                $this->projectRepository->save($p);
-            }
-        }
-        
-        // Appliquer le nouvel ordre au projet
-        $project->setDisplayOrder($newOrder);
-    }
+        // Cas particulier : tableau vide = aucune technologie
+        if (empty($technologyIds)) {return [];}
 
-    /**
-     * Comble le trou laissé par un projet supprimé
-     */
-    private function fillGapOrderAfterDeletion(int $deletedOrder): void
-    {
-        $projectsAfter = $this->projectRepository->findProjectsAfterOrder($deletedOrder);
-        
-        foreach ($projectsAfter as $project) {
-            $project->setDisplayOrder($project->getDisplayOrder() - 1);
-            $this->projectRepository->save($project);
-        }
-    }
+        // Récupérer les technologies correspondantes aux IDs
+        $technologies = $this->technologyRepository->findBy(['id' => $technologyIds]);
 
-    /**
-     * Valide que le displayOrder est dans une plage acceptable
-     */
-    private function validateDisplayOrder(int $order): void
-    {
-        if ($order < 1) {
-            throw new \DomainException('L\'ordre d\'affichage doit être supérieur ou égal à 1.');
+        // Vérifier que toutes les technologies existent
+        if (count($technologies) !== count($technologyIds)) {
+            throw new \DomainException('Une ou plusieurs technologies sont invalides.');
         }
-
-        $maxOrder = $this->projectRepository->getMaxDisplayOrder();
-        if ($order > $maxOrder) {
-            throw new \DomainException("L'ordre d'affichage ne peut pas dépasser {$maxOrder}.");
-        }
+        return $technologies;
     }
 }
