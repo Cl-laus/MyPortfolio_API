@@ -3,14 +3,16 @@ namespace App\Services;
 
 use App\Entity\Project;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 class ImageUploadService
 {
     private string $uploadDir;
 
-    public function __construct(string $projectDir)
+    public function __construct(ParameterBagInterface $params)
     {
-        // Dossier absolu pour stocker toutes les images des projets
+        // Récupère automatiquement la racine du projet
+        $projectDir = $params->get('kernel.project_dir');
         $this->uploadDir = $projectDir . '/public/uploads/projects';
     }
 

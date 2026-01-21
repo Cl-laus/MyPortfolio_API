@@ -5,21 +5,23 @@ use App\Controller\DTO\CreateProjectDTO;
 use App\Controller\DTO\UpdateProjectDTO;
 use App\Entity\Project;
 use App\Repository\ProjectRepository;
-use App\Services\ProjectsManager;
+use App\Services\ImageManager;
+use App\Services\ProjectManager;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Route('/api/projects', name: 'api_projects_')]
 final class ProjectController extends AbstractController
 {
     public function __construct(
         private ProjectRepository $projectRepository,
-        private ProjectsManager $projectManager
+        private ProjectManager $projectManager,
+        private ImageManager $imageManager
     ) {}
 
     ///////////////////////////////////// GETs /////////////////////////////////////
@@ -32,6 +34,7 @@ final class ProjectController extends AbstractController
         $projects = $this->projectRepository->findTop3Projects();
         return $this->json($projects, 200, [], ['groups' => 'project:list']);
     }
+
     #[Route('/all', name: '_all', methods: ['GET'])]
     public function showListAll(): JsonResponse
     {
@@ -39,8 +42,7 @@ final class ProjectController extends AbstractController
         return $this->json($projects, 200, [], ['groups' => 'project:list']);
     }
 
-    #[Route('/{id}', name: 'detail', methods: ['GET'],
-        requirements: ['id' => Requirement::DIGITS])]
+    #[Route('/{id}', name: 'detail', methods: ['GET'], requirements: ['id' => Requirement::DIGITS])]
     public function showDetail(#[MapEntity] Project $project): JsonResponse
     {
         return $this->json($project, 200, [], ['groups' => 'project:read']);
@@ -52,7 +54,7 @@ final class ProjectController extends AbstractController
     // Il l'envoie au ProjectManager ; qui lui-même appelle le mapper et renvoie l'entité au controller
     // Le controller sérialise l'entité renvoyée par le service et la retourne en réponse
 
-    #[Route('', name:'create', methods: ['POST'])]
+    #[Route('', name: 'create', methods: ['POST'])]
     public function create(#[MapRequestPayload] CreateProjectDTO $dto): JsonResponse
     {
         try {
@@ -63,15 +65,9 @@ final class ProjectController extends AbstractController
         return $this->json($project, 201, [], ['groups' => 'project:read']);
     }
 
-    #[Route('/{id}',name:'update', methods: ['PATCH'], requirements: ['id' => Requirement::DIGITS])]
+    #[Route('/{id}', name: 'update', methods: ['PATCH'], requirements: ['id' => Requirement::DIGITS])]
     public function update(int $id, #[MapRequestPayload] UpdateProjectDTO $dto): JsonResponse
     {
-        // Validation des données reçues
-        // $errors = $this->validator->validate($dto);
-        // if (count($errors) > 0) {
-        //     return $this->json(['errors' => (string) $errors], 400);
-        // }
-
         // Appel du manager pour mettre à jour le projet
         try {
             $project = $this->projectManager->update($id, $dto);
@@ -83,7 +79,7 @@ final class ProjectController extends AbstractController
         return $this->json($project, 200, [], ['groups' => 'project:read']);
     }
 
-    #[Route('/{id}',name:'delete', methods: ['DELETE'], requirements: ['id' => Requirement::DIGITS])]
+    #[Route('/{id}', name: 'delete', methods: ['DELETE'], requirements: ['id' => Requirement::DIGITS])]
     public function delete(int $id): JsonResponse
     {
         // Appel du manager pour supprimer le projet et avoir l'erreur si elle existe
@@ -95,5 +91,26 @@ final class ProjectController extends AbstractController
 
         // Retour sans contenu
         return new JsonResponse(null, 204);
+    }
+
+    ////////////////////// IMAGE MANAGEMENT /////////////////////////////////
+    // Les fichiers uploadés ne peuvent pas être traités via MapRequestPayload (multipart/form-data)
+    // Le controller récupère les fichiers depuis Request et les envoie au ImageManager
+    // Le manager fait toutes les validations et la logique métier
+
+    #[Route('/{id}/images', name: 'add_images', methods: ['POST'], requirements: ['id' => Requirement::DIGITS])]
+    public function addImages(int $id, Request $request): JsonResponse
+    {
+        // Récupérer les fichiers uploadés
+        $files = $request->files->all();
+        // Appel du manager pour créer les images
+        try {
+            $createdImages = $this->imageManager->createMultiple($id, $files);
+        } catch (\DomainException $e) {
+            return $this->json(['errors' => $e->getMessage()], 400);
+        }
+
+        // Retour JSON avec les images créées
+        return $this->json($createdImages, 201, [], ['groups' => 'image:read']);
     }
 }
