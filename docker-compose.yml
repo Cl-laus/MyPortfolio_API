@@ -1,0 +1,65 @@
+services:
+
+  # Service PHP (ton application Symfony)
+  app:
+    build: .                 # construit l'image à partir du Dockerfile
+    volumes:
+      - .:/var/www/html      # synchronise ton projet local avec le container
+      - ./public/uploads:/var/www/html/public/uploads
+                              # volume pour stocker les images uploadées
+                              # elles restent sur ton disque même si le container est supprimé
+
+    environment:
+      APP_ENV: dev
+      DATABASE_URL: mysql://dev:mdpdev@database:3306/portfolio_db?serverVersion=8.0
+      # URL de connexion à la base pour Symfony
+
+    depends_on:
+      - database             # démarre la base avant l'application
+
+
+  # Serveur web Nginx
+  web:
+    image: nginx:alpine      # image officielle Nginx très légère
+
+    ports:
+      - "8000:80"            # port local:port container
+                             # ton site sera accessible sur http://localhost:8080
+
+    volumes:
+      - .:/var/www/html      # Nginx doit accéder aux fichiers PHP
+      - ./public/uploads:/var/www/html/public/uploads
+                             # accès aux images uploadées
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+                             # configuration personnalisée de Nginx
+
+    depends_on:
+      - app                  # démarre PHP avant Nginx
+
+
+  # Base de données MySQL
+  database:
+    image: mysql:8.0         # image officielle MySQL
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root   # mot de passe root
+      MYSQL_DATABASE: portfolio_db
+      MYSQL_USER: dev
+      MYSQL_PASSWORD: mdpdev
+
+    ports:
+      - "3306:3306"          # permet de se connecter depuis ton PC
+                             # avec DBeaver, TablePlus, etc.
+
+    volumes:
+      - db_data:/var/lib/mysql
+                             # volume persistant pour stocker les données
+                             # la base reste même si le container est supprimé
+
+    command: --default-authentication-plugin=mysql_native_password
+                             # évite certains problèmes de compatibilité MySQL
+
+
+# Déclaration des volumes Docker
+volumes:
+  db_data:                   # volume utilisé par MySQL

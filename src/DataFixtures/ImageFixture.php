@@ -17,8 +17,10 @@ class ImageFixture extends Fixture implements DependentFixtureInterface
         foreach ($projects as $project) {
             // Créer 3 images par projet
             for ($i = 1; $i <= 3; $i++) {
+                $filename = sprintf('img_%d_%d.jpg', $project->getId(), $i);
+                $url = '/uploads/' . $filename;
                 $image = new Image();
-                $image->setUrl("/uploads/projects/{$project->getId()}/{$project->getId()}_{$i}.webp");
+                $image->setUrl($url);
                 $image->setDisplayOrder($i);
                 $image->setProject($project);
 
