@@ -8,13 +8,11 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
 
-#[Route('/api/social-networks', name: 'api_social_networks_')]
 final class SocialNetworkController extends AbstractController
 {
     public function __construct(
@@ -22,32 +20,32 @@ final class SocialNetworkController extends AbstractController
         private SerializerInterface $serializer
     ) {}
 
-    #[Route('', name: 'list', methods: ['GET'])]
+    #[Route('/api/social-networks', name: 'api_social_networks_list', methods: ['GET'])]
     public function showList(): JsonResponse
     {
         $socialNetworks = $this->socialNetworkRepository->findAll();
-        $data = $this->serializer->serialize($socialNetworks, 'json', ['groups' => 'social_network:read']);
+        $data = $this->serializer->serialize($socialNetworks, 'json', context: ['groups' => 'social_network:read']);
         return new JsonResponse($data, 200, [], true);
     }
 
-    #[Route('/{id}', name: 'detail', methods: ['GET'], requirements: ['id' => Requirement::DIGITS])]
+    #[Route('/api/social-networks/{id}', name: 'api_social_networks_detail', methods: ['GET'], requirements: ['id' => Requirement::DIGITS])]
     public function showDetail(#[MapEntity] SocialNetwork $socialNetwork): JsonResponse
     {
-        $data = $this->serializer->serialize($socialNetwork, 'json', ['groups' => 'social_network:read']);
+        $data = $this->serializer->serialize($socialNetwork, 'json', context: ['groups' => 'social_network:read']);
         return new JsonResponse($data, 200, [], true);
     }
 
-    #[Route('', name: 'create', methods: ['POST'])]
+    #[Route('/api/admin/social-networks', name: 'api_admin_social_networks_create', methods: ['POST'])]
     public function create(
         #[MapRequestPayload(serializationContext: ['groups' => 'social_network:read'])]
         SocialNetwork $newSocialNetwork
     ): JsonResponse {
         $this->socialNetworkRepository->save($newSocialNetwork);
-        $data = $this->serializer->serialize($newSocialNetwork, 'json', ['groups' => 'social_network:read']);
+        $data = $this->serializer->serialize($newSocialNetwork, 'json', context: ['groups' => 'social_network:read']);
         return new JsonResponse($data, 201, [], true);
     }
 
-    #[Route('/{id}', name: 'update', methods: ['PATCH'], requirements: ['id' => Requirement::DIGITS])]
+    #[Route('/api/admin/social-networks/{id}', name: 'api_admin_social_networks_update', methods: ['PATCH'], requirements: ['id' => Requirement::DIGITS])]
     public function update(#[MapEntity] SocialNetwork $socialNetwork, Request $request): JsonResponse
     {
         $this->serializer->deserialize(
@@ -63,7 +61,7 @@ final class SocialNetworkController extends AbstractController
         return $this->showDetail($socialNetwork);
     }
 
-    #[Route('/{id}', name: 'delete', methods: ['DELETE'], requirements: ['id' => Requirement::DIGITS])]
+    #[Route('/api/admin/social-networks/{id}', name: 'api_admin_social_networks_delete', methods: ['DELETE'], requirements: ['id' => Requirement::DIGITS])]
     public function delete(#[MapEntity] SocialNetwork $socialNetwork): JsonResponse
     {
         $this->socialNetworkRepository->delete($socialNetwork);

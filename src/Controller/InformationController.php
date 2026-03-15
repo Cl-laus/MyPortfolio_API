@@ -13,7 +13,6 @@ use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
 
-#[Route('/api/informations', name: 'api_informations_')]
 final class InformationController extends AbstractController
 {
     public function __construct(
@@ -21,7 +20,7 @@ final class InformationController extends AbstractController
         private SerializerInterface $serializer
     ) {}
 
-    #[Route('', name: 'list', methods: ['GET'])]
+    #[Route('/api/informations', name: 'api_informations_show', methods: ['GET'])]
     public function show(): JsonResponse
     {
         $information = $this->informationRepository->findAll();
@@ -29,7 +28,7 @@ final class InformationController extends AbstractController
         return new JsonResponse($data, 200, [], true);
     }
 
-    #[Route('/{id}', name: 'update', methods: ['PATCH'], requirements: ['id' => Requirement::DIGITS])]
+    #[Route('/api/admin/informations/{id}', name: 'api_admin_informations_update', methods: ['PATCH'], requirements: ['id' => Requirement::DIGITS])]
     public function update(#[MapEntity] Information $information, Request $request): JsonResponse
     {
         $this->serializer->deserialize(

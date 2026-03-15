@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Controller;
 
 use App\Entity\Technology;
@@ -14,16 +13,14 @@ use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
 
-#[Route('/api/technologies', name: 'api_technologies_')]
 final class TechnologyController extends AbstractController
 {
     public function __construct(
         private TechnologyRepository $technologyRepository,
         private SerializerInterface $serializer
-    ) {
-    }
+    ) {}
 
-    #[Route('', name: 'list', methods: ['GET'])]
+    #[Route('/api/technologies', name: 'api_technologies_list', methods: ['GET'])]
     public function showList(): JsonResponse
     {
         $technologies = $this->technologyRepository->findAll();
@@ -32,44 +29,37 @@ final class TechnologyController extends AbstractController
             'json',
             context: ['groups' => 'technology:read']
         );
-
         return new JsonResponse($data, JsonResponse::HTTP_OK, [], true);
     }
 
-    #[Route('/{id}', name: 'detail', methods: ['GET'], requirements: ['id' => Requirement::DIGITS])]
-    public function showDetail(
-        #[MapEntity] Technology $technology
-    ): JsonResponse {
+    #[Route('/api/technologies/{id}', name: 'api_technologies_detail', methods: ['GET'], requirements: ['id' => Requirement::DIGITS])]
+    public function showDetail(#[MapEntity] Technology $technology): JsonResponse
+    {
         $data = $this->serializer->serialize(
             $technology,
             'json',
             context: ['groups' => 'technology:read']
         );
-
         return new JsonResponse($data, JsonResponse::HTTP_OK, [], true);
     }
 
-    #[Route('', name: 'create', methods: ['POST'])]
+    #[Route('/api/admin/technologies', name: 'api_admin_technologies_create', methods: ['POST'])]
     public function create(
         #[MapRequestPayload(serializationContext: ['groups' => 'technology:write'])]
         Technology $newTechnology
     ): JsonResponse {
         $this->technologyRepository->save($newTechnology);
-
         $data = $this->serializer->serialize(
             $newTechnology,
             'json',
             context: ['groups' => 'technology:read']
         );
-
         return new JsonResponse($data, JsonResponse::HTTP_CREATED, [], true);
     }
 
-    #[Route('/{id}', name: 'update', methods: ['PATCH'],requirements: ['id' => Requirement::DIGITS])]
-    public function update(
-        #[MapEntity] Technology $technology,
-        Request $request
-    ): JsonResponse {
+    #[Route('/api/admin/technologies/{id}', name: 'api_admin_technologies_update', methods: ['PATCH'], requirements: ['id' => Requirement::DIGITS])]
+    public function update(#[MapEntity] Technology $technology, Request $request): JsonResponse
+    {
         $this->serializer->deserialize(
             $request->getContent(),
             Technology::class,
@@ -79,21 +69,17 @@ final class TechnologyController extends AbstractController
                 AbstractNormalizer::GROUPS => ['technology:write'],
             ]
             // on dezerialize les données contenues dans la requête,
-            //on met à jour l'entité Technology existante
-            //on serialise l'entité mise à jour pour la renvoyer en réponse
+            // on met à jour l'entité Technology existante
+            // on serialise l'entité mise à jour pour la renvoyer en réponse
         );
-
         $this->technologyRepository->save($technology);
-
         return $this->showDetail($technology);
     }
 
-    #[Route('/{id}', name: 'delete', methods: ['DELETE'], requirements: ['id' => Requirement::DIGITS])]
-    public function delete(
-        #[MapEntity] Technology $technology
-    ): JsonResponse {
+    #[Route('/api/admin/technologies/{id}', name: 'api_admin_technologies_delete', methods: ['DELETE'], requirements: ['id' => Requirement::DIGITS])]
+    public function delete(#[MapEntity] Technology $technology): JsonResponse
+    {
         $this->technologyRepository->delete($technology);
-
         return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
     }
 }

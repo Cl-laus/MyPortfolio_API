@@ -15,7 +15,6 @@ use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 
-#[Route('/api/projects', name: 'api_projects_')]
 final class ProjectController extends AbstractController
 {
     public function __construct(
@@ -24,37 +23,37 @@ final class ProjectController extends AbstractController
         private ImageManager $imageManager
     ) {}
 
-    ///////////////////////////////////// GETs /////////////////////////////////////
+    ///////////////////////////////////// GETs publics /////////////////////////////////////
     // Pas besoin de DTO pour les GETs car on ne modifie pas les données
     // On utilise les groupes de sérialisation pour contrôler les données renvoyées
 
-    #[Route('', name: 'list', methods: ['GET'])]
+    #[Route('/api/projects', name: 'api_projects_list', methods: ['GET'])]
     public function showList(): JsonResponse
     {
         $projects = $this->projectRepository->findTop3Projects();
         return $this->json($projects, 200, [], ['groups' => 'project:list']);
     }
 
-    #[Route('/all', name: '_all', methods: ['GET'])]
+    #[Route('/api/projects/all', name: 'api_projects_all', methods: ['GET'])]
     public function showListAll(): JsonResponse
     {
         $projects = $this->projectRepository->findAll();
         return $this->json($projects, 200, [], ['groups' => 'project:list']);
     }
 
-    #[Route('/{id}', name: 'detail', methods: ['GET'], requirements: ['id' => Requirement::DIGITS])]
+    #[Route('/api/projects/{id}', name: 'api_projects_detail', methods: ['GET'], requirements: ['id' => Requirement::DIGITS])]
     public function showDetail(#[MapEntity] Project $project): JsonResponse
     {
         return $this->json($project, 200, [], ['groups' => 'project:read']);
     }
 
-    ////////////////////// CREATE, UPDATE, DELETE /////////////////////////////////
+    ////////////////////// CREATE, UPDATE, DELETE admin /////////////////////////////////
     // On utilise des DTO pour les opérations de création et de mise à jour
     // Le controller vérifie le DTO via MapRequestPayload
     // Il l'envoie au ProjectManager ; qui lui-même appelle le mapper et renvoie l'entité au controller
     // Le controller sérialise l'entité renvoyée par le service et la retourne en réponse
 
-    #[Route('', name: 'create', methods: ['POST'])]
+    #[Route('/api/admin/projects', name: 'api_admin_projects_create', methods: ['POST'])]
     public function create(#[MapRequestPayload] CreateProjectDTO $dto): JsonResponse
     {
         try {
@@ -65,7 +64,7 @@ final class ProjectController extends AbstractController
         return $this->json($project, 201, [], ['groups' => 'project:read']);
     }
 
-    #[Route('/{id}', name: 'update', methods: ['PATCH'], requirements: ['id' => Requirement::DIGITS])]
+    #[Route('/api/admin/projects/{id}', name: 'api_admin_projects_update', methods: ['PATCH'], requirements: ['id' => Requirement::DIGITS])]
     public function update(int $id, #[MapRequestPayload] UpdateProjectDTO $dto): JsonResponse
     {
         // Appel du manager pour mettre à jour le projet
@@ -79,7 +78,7 @@ final class ProjectController extends AbstractController
         return $this->json($project, 200, [], ['groups' => 'project:read']);
     }
 
-    #[Route('/{id}', name: 'delete', methods: ['DELETE'], requirements: ['id' => Requirement::DIGITS])]
+    #[Route('/api/admin/projects/{id}', name: 'api_admin_projects_delete', methods: ['DELETE'], requirements: ['id' => Requirement::DIGITS])]
     public function delete(int $id): JsonResponse
     {
         // Appel du manager pour supprimer le projet et avoir l'erreur si elle existe
@@ -93,12 +92,12 @@ final class ProjectController extends AbstractController
         return new JsonResponse(null, 204);
     }
 
-    ////////////////////// IMAGE MANAGEMENT /////////////////////////////////
+    ////////////////////// IMAGE MANAGEMENT admin /////////////////////////////////
     // Les fichiers uploadés ne peuvent pas être traités via MapRequestPayload (multipart/form-data)
     // Le controller récupère les fichiers depuis Request et les envoie au ImageManager
     // Le manager fait toutes les validations et la logique métier
 
-    #[Route('/{id}/images', name: 'add_images', methods: ['POST'], requirements: ['id' => Requirement::DIGITS])]
+    #[Route('/api/admin/projects/{id}/images', name: 'api_admin_projects_add_images', methods: ['POST'], requirements: ['id' => Requirement::DIGITS])]
     public function addImages(int $id, Request $request): JsonResponse
     {
         // Récupérer les fichiers uploadés
@@ -113,4 +112,27 @@ final class ProjectController extends AbstractController
         // Retour JSON avec les images créées
         return $this->json($createdImages, 201, [], ['groups' => 'image:read']);
     }
+    ////////////////////// TECHNOLOGY ASSOCIATION admin /////////////////////////////////
+
+#[Route('/api/admin/projects/{projectId}/technologies/{technoId}', name: 'api_admin_projects_add_technology', methods: ['POST'], requirements: ['projectId' => Requirement::DIGITS, 'technoId' => Requirement::DIGITS])]
+public function addTechnology(int $projectId, int $technoId): JsonResponse
+{
+    try {
+        $project = $this->projectManager->addTechnology($projectId, $technoId);
+    } catch (\DomainException $e) {
+        return $this->json(['errors' => $e->getMessage()], 400);
+    }
+    return $this->json($project, 200, [], ['groups' => 'project:read']);
+}
+
+#[Route('/api/admin/projects/{projectId}/technologies/{technoId}', name: 'api_admin_projects_remove_technology', methods: ['DELETE'], requirements: ['projectId' => Requirement::DIGITS, 'technoId' => Requirement::DIGITS])]
+public function removeTechnology(int $projectId, int $technoId): JsonResponse
+{
+    try {
+        $project = $this->projectManager->removeTechnology($projectId, $technoId);
+    } catch (\DomainException $e) {
+        return $this->json(['errors' => $e->getMessage()], 400);
+    }
+    return $this->json($project, 200, [], ['groups' => 'project:read']);
+}
 }
