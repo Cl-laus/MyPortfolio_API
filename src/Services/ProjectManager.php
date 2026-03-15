@@ -104,7 +104,49 @@ class ProjectManager
         );
     }
 
-    
+    ////////// ADD / REMOVE TECHNOLOGY //////////
+
+public function addTechnology(int $projectId, int $technoId): Project
+{
+    // 1. Récupérer le projet ou erreur
+    $project = $this->projectRepository->find($projectId);
+    if (!$project) {
+        throw new \DomainException('Projet introuvable.');
+    }
+
+    // 2. Récupérer la technologie ou erreur
+    $technology = $this->technologyRepository->find($technoId);
+    if (!$technology) {
+        throw new \DomainException('Technologie introuvable.');
+    }
+
+    // 3. Associer la technologie au projet
+    $project->addTechnology($technology);
+    $this->projectRepository->save($project);
+
+    return $project;
+}
+
+public function removeTechnology(int $projectId, int $technoId): Project
+{
+    // 1. Récupérer le projet ou erreur
+    $project = $this->projectRepository->find($projectId);
+    if (!$project) {
+        throw new \DomainException('Projet introuvable.');
+    }
+
+    // 2. Récupérer la technologie ou erreur
+    $technology = $this->technologyRepository->find($technoId);
+    if (!$technology) {
+        throw new \DomainException('Technologie introuvable.');
+    }
+
+    // 3. Dissocier la technologie du projet
+    $project->removeTechnology($technology);
+    $this->projectRepository->save($project);
+
+    return $project;
+}
     ///////////////// PRIVATE METHODS //////////
 
     /**
