@@ -29,6 +29,14 @@ class ImageUploadService
         return '/uploads/' . $filename;
     }
 
+      public function uploadProfilePhoto(UploadedFile $file): string
+    {
+        // Nom fixe pour la photo de profil
+        $extension = $file->getClientOriginalExtension();
+        $filename = 'profile_photo.' . $extension;
+        $file->move($this->uploadDir, $filename);
+        return '/uploads/' . $filename;
+    }
 
     public function delete(string $url): void
     {
