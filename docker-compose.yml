@@ -2,64 +2,48 @@ services:
 
   # Service PHP (ton application Symfony)
   app:
-    build: .                 # construit l'image à partir du Dockerfile
+    build: .
     volumes:
-      - .:/var/www/html      # synchronise ton projet local avec le container
+      - .:/var/www/html
       - ./public/uploads:/var/www/html/public/uploads
-                              # volume pour stocker les images uploadées
-                              # elles restent sur ton disque même si le container est supprimé
-
     environment:
       APP_ENV: dev
-      DATABASE_URL: mysql://dev:mdpdev@database:3306/portfolio_db?serverVersion=8.0
-      # URL de connexion à la base pour Symfony
-
+      DATABASE_URL: mysql://${MYSQL_USER:-dev}:${MYSQL_PASSWORD:-mdpdev}@database:3306/${MYSQL_DATABASE:-portfolio_db}?serverVersion=8.0
     depends_on:
-      - database             # démarre la base avant l'application
+      - database
 
 
   # Serveur web Nginx
   web:
-    image: nginx:alpine      # image officielle Nginx très légère
-
+    image: nginx:alpine
     ports:
-      - "8000:80"            # port local:port container
-                             # ton site sera accessible sur http://localhost:8080
-
+      - "8000:80"
     volumes:
-      - .:/var/www/html      # Nginx doit accéder aux fichiers PHP
+      - .:/var/www/html
       - ./public/uploads:/var/www/html/public/uploads
-                             # accès aux images uploadées
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
-                             # configuration personnalisée de Nginx
-
     depends_on:
-      - app                  # démarre PHP avant Nginx
+      - app
 
 
   # Base de données MySQL
   database:
-    image: mysql:8.0         # image officielle MySQL
-
+    image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: root   # mot de passe root
-      MYSQL_DATABASE: portfolio_db
-      MYSQL_USER: dev
-      MYSQL_PASSWORD: mdpdev
-
-    ports:
-      - "3306:3306"          # permet de se connecter depuis ton PC
-                             # avec DBeaver, TablePlus, etc.
-
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-portfolio_db}
+      MYSQL_USER: ${MYSQL_USER:-dev}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-mdpdev}
     volumes:
       - db_data:/var/lib/mysql
-                             # volume persistant pour stocker les données
-                             # la base reste même si le container est supprimé
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --innodb-buffer-pool-size=128M
+      --innodb-log-file-size=32M
+      --max-connections=50
+      --performance-schema=OFF
+    mem_limit: ${MYSQL_MEM_LIMIT:-512m}
 
-    command: --default-authentication-plugin=mysql_native_password
-                             # évite certains problèmes de compatibilité MySQL
 
-
-# Déclaration des volumes Docker
 volumes:
-  db_data:                   # volume utilisé par MySQL
+  db_data:
