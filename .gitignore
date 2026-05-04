@@ -1,4 +1,11 @@
 
+###> docker ###
+/docker-compose.override.yml
+/docker-compose.yml.bak
+/docker-compose.yml.save
+/backup.sql
+###< docker ###
+
 ###> symfony/framework-bundle ###
 /.env.local
 /.env.local.php
