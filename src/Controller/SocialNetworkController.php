@@ -1,5 +1,4 @@
 <?php
-// src/Controller/SocialNetworkController.php
 namespace App\Controller;
 
 use App\Entity\SocialNetwork;

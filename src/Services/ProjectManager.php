@@ -8,10 +8,6 @@ use App\Entity\Project;
 use App\Repository\ProjectRepository;
 use App\Repository\TechnologyRepository;
 
-/**
- * Service pour gérer la logique métier liée aux projets
- * Gère la création, mise à jour, suppression et réorganisation des projets en appelant d'autres services
- */
 class ProjectManager
 {
     public function __construct(
@@ -25,19 +21,14 @@ class ProjectManager
 
     public function create(CreateProjectDTO $dto): Project
     {
-        // 1. Valider et récupérer les technologies
         $technologies = $this->validateAndGetTechnologies($dto->technologies);
 
-        // 2. Récupérer le plus grand displayOrder existant en BDD
         $maxOrder = $this->projectRepository->getMaxDisplayOrder();
 
-        // 3. Transformer le DTO en entité via le mapper
         $project = $this->projectMapper->createFromDto($dto, $technologies);
 
-        // 4. Assigner automatiquement le prochain ordre disponible
         $project->setDisplayOrder($maxOrder + 1);
 
-        // 5. Persister le projet
         $this->projectRepository->save($project);
 
         return $project;
@@ -47,36 +38,42 @@ class ProjectManager
 
     public function update(int $id, UpdateProjectDTO $dto): Project
     {
-        //1. Récupérer le projet existant ou erreur
+        // 1. Récupérer le projet
         $project = $this->projectRepository->find($id);
-        if (! $project) {
+        if (!$project) {
             throw new \DomainException('Projet introuvable.');
         }
 
-        //2. Si l'ordre change, on réorganise les autres projets
+        // 2. Gestion du displayOrder
         $dtoOrder = $dto->displayOrder;
         $actualOrder = $project->getDisplayOrder();
         $maxOrder = $this->projectRepository->getMaxDisplayOrder();
 
-        if ($dtoOrder== null && $dtoOrder !== $actualOrder) {
+        if ($dtoOrder !== null && $dtoOrder !== $actualOrder) {
+            // Validation
             $this->displayOrderManager->validateDisplayOrder($dtoOrder, $maxOrder);
 
+            // Réorganisation des autres projets
             $this->displayOrderManager->reOrder(
                 $this->projectRepository->findAll(),
                 $actualOrder,
                 $dtoOrder
             );
+
+            // 🔥 IMPORTANT : appliquer le nouvel ordre au projet courant
+            $project->setDisplayOrder($dtoOrder);
         }
 
-        //3. Valider et récupérer les technologies si elles existent dans le DTO
+        // 3. Technologies
         $technologies = null;
         if ($dto->technologies !== null) {
             $technologies = $this->validateAndGetTechnologies($dto->technologies);
         }
 
-        // 4. Transformer le DTO en entité via le mapper
+        // 4. Mise à jour via mapper
         $this->projectMapper->updateFromDto($dto, $project, $technologies);
-        // 5. Persister le projet
+
+        // 5. Save
         $this->projectRepository->save($project);
 
         return $project;
@@ -86,88 +83,73 @@ class ProjectManager
 
     public function delete(int $id): void
     {
-        //1. Récupérer le projet existant ou erreur
         $project = $this->projectRepository->find($id);
-        if (! $project) {
+        if (!$project) {
             throw new \DomainException('Projet introuvable.');
         }
-        //2. Récupérer l'ordre du projet avant suppression
+
         $deletedOrder = $project->getDisplayOrder();
 
-        //3.Supprimer le projet
         $this->projectRepository->delete($project);
 
-        //4.Combler le "trou" : décaler tous les projets après celui supprimé
         $this->displayOrderManager->fillGapAfterDeletion(
             $this->projectRepository->findAll(),
             $deletedOrder
         );
     }
 
-    ////////// ADD / REMOVE TECHNOLOGY //////////
+    ////////// TECHNOLOGY //////////
 
-public function addTechnology(int $projectId, int $technoId): Project
-{
-    // 1. Récupérer le projet ou erreur
-    $project = $this->projectRepository->find($projectId);
-    if (!$project) {
-        throw new \DomainException('Projet introuvable.');
+    public function addTechnology(int $projectId, int $technoId): Project
+    {
+        $project = $this->projectRepository->find($projectId);
+        if (!$project) {
+            throw new \DomainException('Projet introuvable.');
+        }
+
+        $technology = $this->technologyRepository->find($technoId);
+        if (!$technology) {
+            throw new \DomainException('Technologie introuvable.');
+        }
+
+        $project->addTechnology($technology);
+        $this->projectRepository->save($project);
+
+        return $project;
     }
 
-    // 2. Récupérer la technologie ou erreur
-    $technology = $this->technologyRepository->find($technoId);
-    if (!$technology) {
-        throw new \DomainException('Technologie introuvable.');
+    public function removeTechnology(int $projectId, int $technoId): Project
+    {
+        $project = $this->projectRepository->find($projectId);
+        if (!$project) {
+            throw new \DomainException('Projet introuvable.');
+        }
+
+        $technology = $this->technologyRepository->find($technoId);
+        if (!$technology) {
+            throw new \DomainException('Technologie introuvable.');
+        }
+
+        $project->removeTechnology($technology);
+        $this->projectRepository->save($project);
+
+        return $project;
     }
 
-    // 3. Associer la technologie au projet
-    $project->addTechnology($technology);
-    $this->projectRepository->save($project);
+    ////////// PRIVATE //////////
 
-    return $project;
-}
-
-public function removeTechnology(int $projectId, int $technoId): Project
-{
-    // 1. Récupérer le projet ou erreur
-    $project = $this->projectRepository->find($projectId);
-    if (!$project) {
-        throw new \DomainException('Projet introuvable.');
-    }
-
-    // 2. Récupérer la technologie ou erreur
-    $technology = $this->technologyRepository->find($technoId);
-    if (!$technology) {
-        throw new \DomainException('Technologie introuvable.');
-    }
-
-    // 3. Dissocier la technologie du projet
-    $project->removeTechnology($technology);
-    $this->projectRepository->save($project);
-
-    return $project;
-}
-    ///////////////// PRIVATE METHODS //////////
-
-    /**
-     * Valide et récupère les entités Technology à partir d'un tableau d'IDs
-     *
-     * @param int[] recoit des IDs de technologies
-     * @return Technology[] renvoit des entités Technology
-     * @throws \DomainException Si une ou plusieurs technologies sont invalides
-     */
     private function validateAndGetTechnologies(array $technologyIds): array
     {
-        // Cas particulier : tableau vide = aucune technologie
-        if (empty($technologyIds)) {return [];}
+        if (empty($technologyIds)) {
+            return [];
+        }
 
-        // Récupérer les technologies correspondantes aux IDs
         $technologies = $this->technologyRepository->findBy(['id' => $technologyIds]);
 
-        // Vérifier que toutes les technologies existent
         if (count($technologies) !== count($technologyIds)) {
             throw new \DomainException('Une ou plusieurs technologies sont invalides.');
         }
+
         return $technologies;
     }
 }

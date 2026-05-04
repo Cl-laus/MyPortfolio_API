@@ -1,5 +1,4 @@
 <?php
-// src/Controller/InformationController.php
 namespace App\Controller;
 
 use App\Entity\Information;
