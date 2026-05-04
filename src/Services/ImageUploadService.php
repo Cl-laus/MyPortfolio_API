@@ -16,28 +16,45 @@ class ImageUploadService
         $this->uploadDir = $projectDir . '/public/uploads';
     }
 
- 
+    /**
+     * Upload une image pour un projet
+     * @param UploadedFile $file
+     * @param Project $project
+     * @param int $displayOrder
+     * @return string URL de l'image
+     */
     public function upload(UploadedFile $file, Project $project, int $displayOrder): string
     {
-        // Nom unique Ex: img_1_3
+      
+
+        // Nom unique : img_{projectId}_{displayOrder}.{ext}
         $filename = sprintf(
-            'img_%d_%d.webp',
+            'img_%d_%d.%s',
             $project->getId(),
-            $displayOrder
+            $displayOrder,
+            strtolower($file->getClientOriginalExtension())
         );
+
+        // Déplacer le fichier sans conversion
         $file->move($this->uploadDir, $filename);
+
         return '/uploads/' . $filename;
     }
 
-      public function uploadProfilePhoto(UploadedFile $file): string
+    /**
+     * Upload d'une photo de profil
+     */
+    public function uploadProfilePhoto(UploadedFile $file): string
     {
-        // Nom fixe pour la photo de profil
-        $extension = $file->getClientOriginalExtension();
+        $extension = strtolower($file->getClientOriginalExtension());
         $filename = 'profile_photo.' . $extension;
         $file->move($this->uploadDir, $filename);
         return '/uploads/' . $filename;
     }
 
+    /**
+     * Supprime un fichier depuis son URL
+     */
     public function delete(string $url): void
     {
         $filename = basename($url);

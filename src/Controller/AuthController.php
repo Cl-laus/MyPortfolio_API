@@ -1,5 +1,5 @@
 <?php
-// src/Controller/AuthController.php
+
 namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
