@@ -100,8 +100,7 @@ final class ProjectController extends AbstractController
     #[Route('/api/admin/projects/{id}/images', name: 'api_admin_projects_add_images', methods: ['POST'], requirements: ['id' => Requirement::DIGITS])]
     public function addImages(int $id, Request $request): JsonResponse
     {
-        // Récupérer les fichiers uploadés
-        $files = $request->files->all();
+        $files = $request->files->get('files') ?? [];
         // Appel du manager pour créer les images
         try {
             $createdImages = $this->imageManager->createMultiple($id, $files);

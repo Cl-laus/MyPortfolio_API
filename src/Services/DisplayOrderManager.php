@@ -48,11 +48,11 @@ final class DisplayOrderManager
         foreach ($elements as $e) {
             if ($e->getDisplayOrder() > $deletedOrder) {
                 $e->setDisplayOrder($e->getDisplayOrder() - 1);
-
                 $this->em->persist($e);
-
             }
         }
+
+        $this->em->flush();
     }
 
     /**
