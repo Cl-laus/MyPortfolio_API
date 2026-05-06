@@ -9,17 +9,17 @@ use Symfony\Component\Serializer\Attribute\Groups;
 #[ORM\Entity(repositoryClass: ImageRepository::class)]
 class Image
 {
-    #[Groups(['image:read','project:read'])]
+    #[Groups(['image:read', 'project:read', 'project:list'])]
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
-    #[Groups(['image:read','project:read'])]
+    #[Groups(['image:read', 'project:read', 'project:list'])]
     #[ORM\Column(length: 255)]
     private ?string $url = null;
 
-    #[Groups(['image:read','project:read'])]
+    #[Groups(['image:read', 'project:read', 'project:list'])]
     #[ORM\Column]
     private ?int $displayOrder = null;
 
