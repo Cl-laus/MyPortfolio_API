@@ -20,7 +20,7 @@ class Technology
     #[Groups(['technology:read', 'technology:write', 'project:read'])]
     #[ORM\Column(length: 255)]
     private ?string $icon = null;
-    #[Groups(['technology:read', 'technology:write', 'project:read'])]
+    #[Groups(['technology:read', 'technology:write', 'project:read', 'project:list'])]
     #[ORM\Column(length: 50)]
     private ?string $category = null;
 

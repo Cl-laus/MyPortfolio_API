@@ -7,6 +7,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Serializer\Attribute\SerializedName;
 
 #[ORM\HasLifecycleCallbacks]
 #[ORM\Entity(repositoryClass: ProjectRepository::class)]
@@ -37,7 +38,7 @@ class Project
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $links = null;
 
-    #[Groups(['project:read'])]
+    #[Groups(['project:list', 'project:read'])]
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -49,13 +50,14 @@ class Project
      * @var Collection<int, Technology>
      */
     #[ORM\ManyToMany(targetEntity : Technology::class)]
-    #[Groups(['project:read'])]
+    #[Groups(['project:list', 'project:read'])]
     private Collection $technologies;
 
     /**
      * @var Collection<int, Image>
      */
     #[ORM\OneToMany(targetEntity: Image::class, mappedBy: 'project', orphanRemoval: true)]
+    #[ORM\OrderBy(['displayOrder' => 'ASC'])]
     #[Groups(['project:read'])]
     private Collection $images;
 
@@ -184,6 +186,14 @@ class Project
     {
         $this->technologies->removeElement($technology);
         return $this;
+    }
+
+    #[Groups(['project:list'])]
+    #[SerializedName('image')]
+    public function getFirstImage(): ?Image
+    {
+        $first = $this->images->first();
+        return $first !== false ? $first : null;
     }
 
     /**
