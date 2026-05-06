@@ -7,7 +7,7 @@ services:
       - .:/var/www/html
       - uploads_data:/var/www/html/public/uploads
     environment:
-      APP_ENV: prod
+      APP_ENV: dev
       DATABASE_URL: mysql://${MYSQL_USER:-dev}:${MYSQL_PASSWORD:-mdpdev}@database:3306/${MYSQL_DATABASE:-portfolio_db}?serverVersion=8.0
     depends_on:
       - database
