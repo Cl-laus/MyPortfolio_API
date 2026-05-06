@@ -24,9 +24,10 @@ class Technology
     #[ORM\Column(length: 50)]
     private ?string $category = null;
 
+    #[Groups(['technology:read', 'technology:write'])]
+    #[ORM\Column(options: ['default' => true])]
+    private bool $visible = true;
 
-
-    
     public function getId(): ?int
     {
         return $this->id;
@@ -64,6 +65,18 @@ class Technology
     public function setCategory(string $category): static
     {
         $this->category = $category;
+
+        return $this;
+    }
+
+    public function isVisible(): bool
+    {
+        return $this->visible;
+    }
+
+    public function setVisible(bool $visible): static
+    {
+        $this->visible = $visible;
 
         return $this;
     }
