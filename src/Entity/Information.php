@@ -52,6 +52,14 @@ class Information
     #[Groups(['information:read'])]
     private ?string $cv = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['information:read'])]
+    private ?string $careerTitle = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['information:read'])]
+    private ?string $careerText = null;
+
     public function getId(): ?int { return $this->id; }
 
     public function getFullName(): ?string { return $this->fullName; }
@@ -80,4 +88,10 @@ class Information
 
     public function getCv(): ?string { return $this->cv; }
     public function setCv(?string $cv): static { $this->cv = $cv; return $this; }
+
+    public function getCareerTitle(): ?string { return $this->careerTitle; }
+    public function setCareerTitle(?string $careerTitle): static { $this->careerTitle = $careerTitle; return $this; }
+
+    public function getCareerText(): ?string { return $this->careerText; }
+    public function setCareerText(?string $careerText): static { $this->careerText = $careerText; return $this; }
 }
