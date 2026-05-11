@@ -24,13 +24,13 @@ final class ProjectController extends AbstractController
     ) {}
 
     ///////////////////////////////////// GETs publics /////////////////////////////////////
-    // Pas besoin de DTO pour les GETs car on ne modifie pas les données
-    // On utilise les groupes de sérialisation pour contrôler les données renvoyées
 
     #[Route('/api/projects', name: 'api_projects_list', methods: ['GET'])]
     public function showList(): JsonResponse
     {
         $projects = $this->projectRepository->findTop3Projects();
+        // 'project:list' : groupe de sérialisation qui expose uniquement les champs publics.
+        // Les champs non déclarés dans ce groupe (ex: données internes) ne sont jamais retournés.
         return $this->json($projects, 200, [], ['groups' => 'project:list']);
     }
 
@@ -41,6 +41,8 @@ final class ProjectController extends AbstractController
         return $this->json($projects, 200, [], ['groups' => 'project:list']);
     }
 
+    // Requirement::DIGITS : l'ID doit être un entier positif.
+    // Toute valeur non numérique (chaîne, chemin, injection) retourne automatiquement 404.
     #[Route('/api/projects/{id}', name: 'api_projects_detail', methods: ['GET'], requirements: ['id' => Requirement::DIGITS])]
     public function showDetail(#[MapEntity] Project $project): JsonResponse
     {
@@ -48,10 +50,9 @@ final class ProjectController extends AbstractController
     }
 
     ////////////////////// CREATE, UPDATE, DELETE admin /////////////////////////////////
-    // On utilise des DTO pour les opérations de création et de mise à jour
-    // Le controller vérifie le DTO via MapRequestPayload
-    // Il l'envoie au ProjectManager ; qui lui-même appelle le mapper et renvoie l'entité au controller
-    // Le controller sérialise l'entité renvoyée par le service et la retourne en réponse
+    // MapRequestPayload désérialise le body JSON vers un DTO (Data Transfer Object).
+    // Seuls les champs déclarés dans le DTO peuvent être modifiés — impossible d'injecter
+    // d'autres champs (id, createdAt…) même si on les envoie dans la requête.
 
     #[Route('/api/admin/projects', name: 'api_admin_projects_create', methods: ['POST'])]
     public function create(#[MapRequestPayload] CreateProjectDTO $dto): JsonResponse
