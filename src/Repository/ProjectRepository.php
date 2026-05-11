@@ -40,18 +40,6 @@ class ProjectRepository extends BaseRepository
         return $result ?? 0;
     }
 
-/**
- * Trouve tous les projets ayant un displayOrder supérieur à l'ordre donné
- */
-    public function findProjectsAfterOrder(int $order): array
-    {
-        return $this->createQueryBuilder('p')
-            ->where('p.displayOrder > :order')
-            ->setParameter('order', $order)
-            ->orderBy('p.displayOrder', 'ASC')
-            ->getQuery()
-            ->getResult();
-    }
     //    /**
     //     * @return Project[] Returns an array of Project objects
     //     */
