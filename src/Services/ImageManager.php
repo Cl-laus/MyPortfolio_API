@@ -57,15 +57,14 @@ class ImageManager
                 throw new \DomainException('Erreur lors de l\'upload du fichier.');
             }
 
-            // Vérifier le type MIME
-            // if ($file->getMimeType() !== 'image/webp') {
-            //     throw new \DomainException('Tous les fichiers doivent être au format WebP.');
-            // }
+            $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+            if (!in_array($file->getMimeType(), $allowedMimeTypes, true)) {
+                throw new \DomainException('Format non autorisé. Formats acceptés : JPG, PNG, GIF, WebP, SVG.');
+            }
 
-            // Vérifier la taille (5MB max)
-            // if ($file->getSize() > 5 * 1024 * 1024) {
-            //     throw new \DomainException('La taille maximale par fichier est de 5MB.');
-            // }
+            if ($file->getSize() > 5 * 1024 * 1024) {
+                throw new \DomainException('La taille maximale par fichier est de 5MB.');
+            }
         }
 
         // 5. Récupérer le displayOrder maximum existant pour ce projet(converti en int)
