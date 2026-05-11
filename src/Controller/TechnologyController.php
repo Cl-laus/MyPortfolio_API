@@ -24,62 +24,63 @@ final class TechnologyController extends AbstractController
     public function showList(): JsonResponse
     {
         $technologies = $this->technologyRepository->findAll();
-        $data = $this->serializer->serialize(
-            $technologies,
-            'json',
-            context: ['groups' => 'technology:read']
-        );
-        return new JsonResponse($data, JsonResponse::HTTP_OK, [], true);
+        return $this->json($technologies, 200, [], ['groups' => 'technology:read']);
     }
 
     #[Route('/api/technologies/{id}', name: 'api_technologies_detail', methods: ['GET'], requirements: ['id' => Requirement::DIGITS])]
     public function showDetail(#[MapEntity] Technology $technology): JsonResponse
     {
-        $data = $this->serializer->serialize(
-            $technology,
-            'json',
-            context: ['groups' => 'technology:read']
-        );
-        return new JsonResponse($data, JsonResponse::HTTP_OK, [], true);
+        return $this->json($technology, 200, [], ['groups' => 'technology:read']);
     }
 
     #[Route('/api/admin/technologies', name: 'api_admin_technologies_create', methods: ['POST'])]
     public function create(
+        // technology:write : groupe dédié à la désérialisation — exclut id
         #[MapRequestPayload(serializationContext: ['groups' => 'technology:write'])]
         Technology $newTechnology
     ): JsonResponse {
-        $this->technologyRepository->save($newTechnology);
-        $data = $this->serializer->serialize(
-            $newTechnology,
-            'json',
-            context: ['groups' => 'technology:read']
-        );
-        return new JsonResponse($data, JsonResponse::HTTP_CREATED, [], true);
+        try {
+            $this->technologyRepository->save($newTechnology);
+        } catch (\Exception $e) {
+            return $this->json(['errors' => 'Une erreur inattendue est survenue.'], 500);
+        }
+
+        return $this->json($newTechnology, 201, [], ['groups' => 'technology:read']);
     }
 
     #[Route('/api/admin/technologies/{id}', name: 'api_admin_technologies_update', methods: ['PATCH'], requirements: ['id' => Requirement::DIGITS])]
     public function update(#[MapEntity] Technology $technology, Request $request): JsonResponse
     {
-        $this->serializer->deserialize(
-            $request->getContent(),
-            Technology::class,
-            'json',
-            [
-                AbstractNormalizer::OBJECT_TO_POPULATE => $technology,
-                AbstractNormalizer::GROUPS => ['technology:write'],
-            ]
-            // on dezerialize les données contenues dans la requête,
-            // on met à jour l'entité Technology existante
-            // on serialise l'entité mise à jour pour la renvoyer en réponse
-        );
-        $this->technologyRepository->save($technology);
-        return $this->showDetail($technology);
+        try {
+            $this->serializer->deserialize(
+                $request->getContent(),
+                Technology::class,
+                'json',
+                [
+                    AbstractNormalizer::OBJECT_TO_POPULATE => $technology,
+                    // technology:write : groupe dédié à l'écriture — exclut id
+                    AbstractNormalizer::GROUPS => ['technology:write'],
+                ]
+            );
+            $this->technologyRepository->save($technology);
+        } catch (\DomainException $e) {
+            return $this->json(['errors' => $e->getMessage()], 400);
+        } catch (\Exception $e) {
+            return $this->json(['errors' => 'Une erreur inattendue est survenue.'], 500);
+        }
+
+        return $this->json($technology, 200, [], ['groups' => 'technology:read']);
     }
 
     #[Route('/api/admin/technologies/{id}', name: 'api_admin_technologies_delete', methods: ['DELETE'], requirements: ['id' => Requirement::DIGITS])]
     public function delete(#[MapEntity] Technology $technology): JsonResponse
     {
-        $this->technologyRepository->delete($technology);
-        return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
+        try {
+            $this->technologyRepository->delete($technology);
+        } catch (\Exception $e) {
+            return $this->json(['errors' => 'Une erreur inattendue est survenue.'], 500);
+        }
+
+        return new JsonResponse(null, 204);
     }
 }

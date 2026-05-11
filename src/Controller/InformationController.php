@@ -21,66 +21,58 @@ final class InformationController extends AbstractController
         private ImageUploadService $uploadService
     ) {}
 
-    ///////////////////////////////////// GET public /////////////////////////////////////
-
     #[Route('/api/informations', name: 'api_informations_show', methods: ['GET'])]
     public function show(): JsonResponse
     {
         $information = $this->informationRepository->findAll();
-        $data = $this->serializer->serialize($information, 'json', context: ['groups' => 'information:read']);
-        return new JsonResponse($data, 200, [], true);
+        return $this->json($information, 200, [], ['groups' => 'information:read']);
     }
-
-    ////////////////////// UPDATE admin /////////////////////////////////
-    // Mise à jour des champs texte de l'entité Information
-    // Le controller deserialise le body JSON et met à jour l'entité existante
 
     #[Route('/api/admin/informations/{id}', name: 'api_admin_informations_update', methods: ['PATCH'], requirements: ['id' => Requirement::DIGITS])]
     public function update(#[MapEntity] Information $information, Request $request): JsonResponse
     {
-        $this->serializer->deserialize(
-            $request->getContent(),
-            Information::class,
-            'json',
-            [
-                AbstractNormalizer::OBJECT_TO_POPULATE => $information,
-                AbstractNormalizer::GROUPS => ['information:read'],
-            ]
-        );
-        $this->informationRepository->save($information);
-        $data = $this->serializer->serialize($information, 'json', context: ['groups' => 'information:read']);
-        return new JsonResponse($data, 200, [], true);
-    }
+        try {
+            // information:write : groupe dédié à l'écriture — exclut id et photoPath
+            $this->serializer->deserialize(
+                $request->getContent(),
+                Information::class,
+                'json',
+                [
+                    AbstractNormalizer::OBJECT_TO_POPULATE => $information,
+                    AbstractNormalizer::GROUPS => ['information:write'],
+                ]
+            );
+            $this->informationRepository->save($information);
+        } catch (\DomainException $e) {
+            return $this->json(['errors' => $e->getMessage()], 400);
+        } catch (\Exception $e) {
+            return $this->json(['errors' => 'Une erreur inattendue est survenue.'], 500);
+        }
 
-    ////////////////////// PHOTO UPLOAD admin /////////////////////////////////
-    // Les fichiers uploadés ne peuvent pas être traités via MapRequestPayload (multipart/form-data)
-    // Le controller récupère le fichier depuis Request et l'envoie à ImageUploadService
-    // L'ancienne photo est supprimée si elle existe avant d'uploader la nouvelle
+        return $this->json($information, 200, [], ['groups' => 'information:read']);
+    }
 
     #[Route('/api/admin/informations/{id}/photo', name: 'api_admin_informations_upload_photo', methods: ['POST'], requirements: ['id' => Requirement::DIGITS])]
     public function uploadPhoto(#[MapEntity] Information $information, Request $request): JsonResponse
     {
-        // Récupérer le fichier uploadé
         $file = $request->files->get('photo');
         if (!$file) {
             return $this->json(['errors' => 'Aucune photo fournie.'], 400);
         }
 
         try {
-            // Supprimer l'ancienne photo si elle existe
             if ($information->getPhotoPath()) {
                 $this->uploadService->delete($information->getPhotoPath());
             }
-
-            // Uploader la nouvelle photo et mettre à jour le chemin
             $path = $this->uploadService->uploadProfilePhoto($file);
             $information->setPhotoPath($path);
             $this->informationRepository->save($information);
-        } catch (\Exception $e) {
+        } catch (\DomainException $e) {
             return $this->json(['errors' => $e->getMessage()], 400);
+        } catch (\Exception $e) {
+            return $this->json(['errors' => 'Erreur lors de l\'upload de la photo.'], 500);
         }
 
-        $data = $this->serializer->serialize($information, 'json', context: ['groups' => 'information:read']);
-        return new JsonResponse($data, 200, [], true);
+        return $this->json($information, 200, [], ['groups' => 'information:read']);
     }
 }

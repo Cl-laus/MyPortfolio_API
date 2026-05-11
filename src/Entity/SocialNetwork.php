@@ -16,15 +16,15 @@ class SocialNetwork
     private ?int $id = null;
 
     #[ORM\Column(length: 100)]
-    #[Groups(['social_network:read'])]
+    #[Groups(['social_network:read', 'social_network:write'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['social_network:read'])]
+    #[Groups(['social_network:read', 'social_network:write'])]
     private ?string $icon = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['social_network:read'])]
+    #[Groups(['social_network:read', 'social_network:write'])]
     private ?string $url = null;
 
     public function getId(): ?int

@@ -10,6 +10,7 @@ use Symfony\Component\Serializer\Attribute\Groups;
 #[ORM\Entity(repositoryClass: InformationRepository::class)]
 class Information
 {
+    // id et photoPath : lecture seule — pas dans information:write
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -17,47 +18,48 @@ class Information
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['information:read'])]
+    #[Groups(['information:read', 'information:write'])]
     private ?string $fullName = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['information:read'])]
+    #[Groups(['information:read', 'information:write'])]
     private ?string $jobTitle = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['information:read'])]
+    #[Groups(['information:read', 'information:write'])]
     private ?string $tagLine = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Groups(['information:read'])]
+    #[Groups(['information:read', 'information:write'])]
     private ?string $introText = null;
 
+    // photoPath géré par l'endpoint dédié /photo — pas modifiable via PATCH texte
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['information:read'])]
     private ?string $photoPath = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['information:read'])]
+    #[Groups(['information:read', 'information:write'])]
     private ?string $aboutTitle = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Groups(['information:read'])]
+    #[Groups(['information:read', 'information:write'])]
     private ?string $aboutText = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['information:read'])]
+    #[Groups(['information:read', 'information:write'])]
     private ?string $email = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['information:read'])]
+    #[Groups(['information:read', 'information:write'])]
     private ?string $cv = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['information:read'])]
+    #[Groups(['information:read', 'information:write'])]
     private ?string $careerTitle = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(['information:read'])]
+    #[Groups(['information:read', 'information:write'])]
     private ?string $careerText = null;
 
     public function getId(): ?int { return $this->id; }

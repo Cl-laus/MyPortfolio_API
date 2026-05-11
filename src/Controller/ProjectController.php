@@ -61,6 +61,8 @@ final class ProjectController extends AbstractController
             $project = $this->projectManager->create($dto);
         } catch (\DomainException $e) {
             return $this->json(['errors' => $e->getMessage()], 400);
+        } catch (\Exception $e) {
+            return $this->json(['errors' => 'Une erreur inattendue est survenue.'], 500);
         }
         return $this->json($project, 201, [], ['groups' => 'project:read']);
     }
@@ -73,9 +75,10 @@ final class ProjectController extends AbstractController
             $project = $this->projectManager->update($id, $dto);
         } catch (\DomainException $e) {
             return $this->json(['errors' => $e->getMessage()], 400);
+        } catch (\Exception $e) {
+            return $this->json(['errors' => 'Une erreur inattendue est survenue.'], 500);
         }
 
-        // Retour du projet mis à jour
         return $this->json($project, 200, [], ['groups' => 'project:read']);
     }
 
@@ -87,9 +90,10 @@ final class ProjectController extends AbstractController
             $this->projectManager->delete($id);
         } catch (\DomainException $e) {
             return $this->json(['errors' => $e->getMessage()], 400);
+        } catch (\Exception $e) {
+            return $this->json(['errors' => 'Une erreur inattendue est survenue.'], 500);
         }
 
-        // Retour sans contenu
         return new JsonResponse(null, 204);
     }
 
@@ -107,9 +111,10 @@ final class ProjectController extends AbstractController
             $createdImages = $this->imageManager->createMultiple($id, $files);
         } catch (\DomainException $e) {
             return $this->json(['errors' => $e->getMessage()], 400);
+        } catch (\Exception $e) {
+            return $this->json(['errors' => 'Une erreur inattendue est survenue.'], 500);
         }
 
-        // Retour JSON avec les images créées
         return $this->json($createdImages, 201, [], ['groups' => 'image:read']);
     }
     ////////////////////// TECHNOLOGY ASSOCIATION admin /////////////////////////////////
@@ -121,6 +126,8 @@ public function addTechnology(int $projectId, int $technoId): JsonResponse
         $project = $this->projectManager->addTechnology($projectId, $technoId);
     } catch (\DomainException $e) {
         return $this->json(['errors' => $e->getMessage()], 400);
+    } catch (\Exception $e) {
+        return $this->json(['errors' => 'Une erreur inattendue est survenue.'], 500);
     }
     return $this->json($project, 200, [], ['groups' => 'project:read']);
 }
@@ -132,6 +139,8 @@ public function removeTechnology(int $projectId, int $technoId): JsonResponse
         $project = $this->projectManager->removeTechnology($projectId, $technoId);
     } catch (\DomainException $e) {
         return $this->json(['errors' => $e->getMessage()], 400);
+    } catch (\Exception $e) {
+        return $this->json(['errors' => 'Une erreur inattendue est survenue.'], 500);
     }
     return $this->json($project, 200, [], ['groups' => 'project:read']);
 }

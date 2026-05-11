@@ -2,10 +2,8 @@
 
 namespace App\Controller;
 
-use App\Entity\Image;
 use App\Repository\ImageRepository;
 use App\Services\ImageManager;
-use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,16 +17,15 @@ final class ImageController extends AbstractController
         private ImageManager $imageManager
     ) {}
 
-    //////////////////// CREATE /////////////////////////////////
-    // se fait dans le ProjectController car les images sont toujours liées à un projet
+    // CREATE : géré dans ProjectController car les images sont toujours liées à un projet
 
-    //////////////////// UPDATE displayOrder admin /////////////////////////////////
     #[Route('/api/admin/images/{id}', name: 'api_admin_images_update', methods: ['PATCH'], requirements: ['id' => Requirement::DIGITS])]
     public function update(int $id, Request $request): JsonResponse
     {
-        // Récupérer le nouveau displayOrder depuis le body
         $data = json_decode($request->getContent(), true);
-        if (!isset($data['displayOrder'])) {
+
+        // Vérifie que le JSON est valide et contient displayOrder
+        if (json_last_error() !== JSON_ERROR_NONE || !isset($data['displayOrder'])) {
             return $this->json(['errors' => 'displayOrder est requis.'], 400);
         }
 
@@ -36,10 +33,13 @@ final class ImageController extends AbstractController
             $image = $this->imageManager->updateDisplayOrder($id, $data['displayOrder']);
         } catch (\DomainException $e) {
             return $this->json(['errors' => $e->getMessage()], 400);
+        } catch (\Exception $e) {
+            return $this->json(['errors' => 'Une erreur inattendue est survenue.'], 500);
         }
+
         return $this->json($image, 200, [], ['groups' => 'image:read']);
     }
-    //////////////////// DELETE admin /////////////////////////////////
+
     #[Route('/api/admin/images/{id}', name: 'api_admin_images_delete', methods: ['DELETE'], requirements: ['id' => Requirement::DIGITS])]
     public function delete(int $id): JsonResponse
     {
@@ -47,7 +47,10 @@ final class ImageController extends AbstractController
             $this->imageManager->delete($id);
         } catch (\DomainException $e) {
             return $this->json(['errors' => $e->getMessage()], 400);
+        } catch (\Exception $e) {
+            return $this->json(['errors' => 'Une erreur inattendue est survenue.'], 500);
         }
+
         return new JsonResponse(null, 204);
     }
 }
