@@ -112,7 +112,8 @@ final class ProjectController extends AbstractController
         } catch (\DomainException $e) {
             return $this->json(['errors' => $e->getMessage()], 400);
         } catch (\Exception $e) {
-            return $this->json(['errors' => 'Une erreur inattendue est survenue.'], 500);
+            error_log('[UPLOAD DEBUG] ' . get_class($e) . ': ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            return $this->json(['errors' => $e->getMessage()], 500);
         }
 
         return $this->json($createdImages, 201, [], ['groups' => 'image:read']);
