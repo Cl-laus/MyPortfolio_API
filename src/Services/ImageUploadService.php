@@ -27,11 +27,14 @@ class ImageUploadService
     {
       
 
-        // Nom unique : img_{projectId}_{displayOrder}.{ext}
+        // uniqid() garantit que chaque upload a une URL différente.
+        // Sans ça, supprimer puis réuploader produit le même nom de fichier
+        // et le navigateur affiche l'ancienne image depuis son cache.
         $filename = sprintf(
-            'img_%d_%d.%s',
+            'img_%d_%d_%s.%s',
             $project->getId(),
             $displayOrder,
+            uniqid(),
             strtolower($file->getClientOriginalExtension())
         );
 
