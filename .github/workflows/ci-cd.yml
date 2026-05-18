@@ -1,0 +1,68 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  # -------------------------------------------------------
+  # CI : lance les tests à chaque push
+  # -------------------------------------------------------
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, pdo, zip, opcache, sqlite3
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Generate JWT keys for tests
+        run: |
+          mkdir -p config/jwt
+          openssl genpkey -algorithm RSA -out config/jwt/private.pem \
+            -pkeyopt rsa_keygen_bits:2048 -aes256 -pass pass:testpassphrase
+          openssl pkey -in config/jwt/private.pem -passin pass:testpassphrase \
+            -out config/jwt/public.pem -pubout
+
+      - name: Create test database schema
+        env:
+          APP_ENV: test
+        run: php bin/console doctrine:schema:create --env=test
+
+      - name: Load fixtures
+        env:
+          APP_ENV: test
+        run: php bin/console doctrine:fixtures:load --env=test --no-interaction
+
+      - name: Run PHPUnit
+        env:
+          APP_ENV: test
+        run: vendor/bin/phpunit --testdox
+
+  # -------------------------------------------------------
+  # CD : déploie sur le VPS uniquement si les tests passent
+  # -------------------------------------------------------
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /var/www/mon-portfolio
+            git pull origin main
+            docker exec mon-portfolio-app-1 php bin/console cache:clear --env=prod
+            docker exec mon-portfolio-app-1 php bin/console cache:warmup --env=prod
