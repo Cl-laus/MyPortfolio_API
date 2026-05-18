@@ -12,14 +12,3 @@ services:
         exclude:
             - '../src/Entity/'
             - '../src/Kernel.php'
-
-# En production, DataFixtures est exclu car DoctrineFixturesBundle n'est pas installé.
-# En dev et test, les fixtures sont disponibles normalement.
-when@prod:
-    services:
-        App\:
-            resource: '../src/'
-            exclude:
-                - '../src/DataFixtures/'
-                - '../src/Entity/'
-                - '../src/Kernel.php'
