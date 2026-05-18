@@ -1,13 +1,17 @@
 name: CI/CD
 
+# Se déclenche à chaque push sur la branche main.
 on:
   push:
     branches: [main]
 
 jobs:
-  # -------------------------------------------------------
-  # CI : lance les tests à chaque push
-  # -------------------------------------------------------
+
+  # ============================================================
+  # CI — Intégration Continue
+  # Lance les tests automatiquement. Si un test échoue,
+  # le déploiement est bloqué.
+  # ============================================================
   test:
     runs-on: ubuntu-latest
 
@@ -15,15 +19,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Installation de PHP avec les extensions nécessaires à Symfony.
       - name: Setup PHP 8.4
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
           extensions: intl, pdo, zip, opcache, sqlite3
 
+      # Installation des dépendances (composer.lock garantit les mêmes versions qu'en prod).
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
 
+      # Génération d'une paire de clés JWT temporaires pour les tests.
+      # Les clés de production restent sur le VPS, jamais dans le repo.
       - name: Generate JWT keys for tests
         run: |
           mkdir -p config/jwt
@@ -32,24 +40,29 @@ jobs:
           openssl pkey -in config/jwt/private.pem -passin pass:testpassphrase \
             -out config/jwt/public.pem -pubout
 
+      # Création du schéma de base de données SQLite (légère, sans serveur à configurer).
       - name: Create test database schema
         env:
           APP_ENV: test
         run: php bin/console doctrine:schema:create --env=test
 
+      # Chargement des fixtures : crée un utilisateur admin de test avec un mot de passe connu.
       - name: Load fixtures
         env:
           APP_ENV: test
         run: php bin/console doctrine:fixtures:load --env=test --no-interaction
 
+      # Lancement des 7 tests (3 unitaires + 4 fonctionnels).
       - name: Run PHPUnit
         env:
           APP_ENV: test
         run: vendor/bin/phpunit --testdox
 
-  # -------------------------------------------------------
-  # CD : déploie sur le VPS uniquement si les tests passent
-  # -------------------------------------------------------
+  # ============================================================
+  # CD — Déploiement Continu
+  # Se lance uniquement si tous les tests passent (needs: test).
+  # Se connecte au VPS via SSH et met à jour le code.
+  # ============================================================
   deploy:
     needs: test
     runs-on: ubuntu-latest
@@ -58,9 +71,9 @@ jobs:
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1
         with:
-          host: ${{ secrets.VPS_HOST }}
+          host: ${{ secrets.VPS_HOST }}      # IP du VPS — définie dans GitHub Secrets
           username: root
-          key: ${{ secrets.VPS_SSH_KEY }}
+          key: ${{ secrets.VPS_SSH_KEY }}    # Clé SSH privée — définie dans GitHub Secrets
           script: |
             cd /var/www/mon-portfolio
             git pull origin main

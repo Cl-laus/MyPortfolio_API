@@ -4,6 +4,8 @@ namespace App\Tests\Unit\DTO;
 use App\Controller\DTO\UpdateProjectDTO;
 use PHPUnit\Framework\TestCase;
 
+// Test unitaire : vérifie que le DTO de mise à jour projet a tous ses champs à null par défaut.
+// Garantit qu'un PATCH partiel (ex: juste le titre) ne modifie pas les autres champs.
 class UpdateProjectDTOTest extends TestCase
 {
     public function testAllFieldsAreNullByDefault(): void

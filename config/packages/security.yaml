@@ -1,4 +1,6 @@
 security:
+    # Les mots de passe sont hachés avec bcrypt/argon2 — algorithmes lents par conception,
+    # rendant le brute force pratiquement impossible même si la base est volée.
     password_hashers:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
 
@@ -13,6 +15,8 @@ security:
             pattern: ^/(_profiler|_wdt|assets|build)/
             security: false
 
+        # Firewall de connexion : reçoit { username, password }, retourne un token JWT.
+        # stateless = pas de session côté serveur, tout est dans le token.
         login:
             pattern: ^/api/batcave
             stateless: true
@@ -23,6 +27,8 @@ security:
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
 
+        # Firewall admin : toutes les routes /api/admin/* nécessitent un JWT valide.
+        # Le token est vérifié par signature RSA — impossible à falsifier sans la clé privée.
         api_admin:
             pattern: ^/api/admin
             stateless: true
@@ -30,5 +36,5 @@ security:
             jwt: ~
 
     access_control:
-        - { path: ^/api/batcave, roles: PUBLIC_ACCESS }
-        - { path: ^/api/admin, roles: ROLE_ADMIN }
+        - { path: ^/api/batcave, roles: PUBLIC_ACCESS }  # login public
+        - { path: ^/api/admin, roles: ROLE_ADMIN }        # tout le reste = admin uniquement

@@ -57,11 +57,14 @@ class ImageManager
                 throw new \DomainException('Erreur lors de l\'upload du fichier.');
             }
 
+            // Vérifie le type réel du fichier (pas juste l'extension).
+            // Empêche d'uploader un fichier .php renommé en .jpg par exemple.
             $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
             if (!in_array($file->getMimeType(), $allowedMimeTypes, true)) {
                 throw new \DomainException('Format non autorisé. Formats acceptés : JPG, PNG, GIF, WebP, SVG.');
             }
 
+            // 5 MB max par fichier
             if ($file->getSize() > 5 * 1024 * 1024) {
                 throw new \DomainException('La taille maximale par fichier est de 5MB.');
             }
