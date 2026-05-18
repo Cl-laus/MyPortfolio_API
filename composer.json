@@ -86,6 +86,10 @@
     },
     "require-dev": {
         "doctrine/doctrine-fixtures-bundle": "^4.3",
-        "symfony/maker-bundle": "^1.65"
+        "phpunit/phpunit": "^9.5",
+        "symfony/browser-kit": "8.0.*",
+        "symfony/css-selector": "8.0.*",
+        "symfony/maker-bundle": "^1.65",
+        "symfony/phpunit-bridge": "^8.0"
     }
 }
