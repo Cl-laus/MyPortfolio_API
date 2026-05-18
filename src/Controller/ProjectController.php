@@ -23,14 +23,10 @@ final class ProjectController extends AbstractController
         private ImageManager $imageManager
     ) {}
 
-    ///////////////////////////////////// GETs publics /////////////////////////////////////
-
     #[Route('/api/projects', name: 'api_projects_list', methods: ['GET'])]
     public function showList(): JsonResponse
     {
         $projects = $this->projectRepository->findTop3Projects();
-        // 'project:list' : groupe de sérialisation qui expose uniquement les champs publics.
-        // Les champs non déclarés dans ce groupe (ex: données internes) ne sont jamais retournés.
         return $this->json($projects, 200, [], ['groups' => 'project:list']);
     }
 
@@ -41,18 +37,11 @@ final class ProjectController extends AbstractController
         return $this->json($projects, 200, [], ['groups' => 'project:list']);
     }
 
-    // Requirement::DIGITS : l'ID doit être un entier positif.
-    // Toute valeur non numérique (chaîne, chemin, injection) retourne automatiquement 404.
     #[Route('/api/projects/{id}', name: 'api_projects_detail', methods: ['GET'], requirements: ['id' => Requirement::DIGITS])]
     public function showDetail(#[MapEntity] Project $project): JsonResponse
     {
         return $this->json($project, 200, [], ['groups' => 'project:read']);
     }
-
-    ////////////////////// CREATE, UPDATE, DELETE admin /////////////////////////////////
-    // MapRequestPayload désérialise le body JSON vers un DTO (Data Transfer Object).
-    // Seuls les champs déclarés dans le DTO peuvent être modifiés — impossible d'injecter
-    // d'autres champs (id, createdAt…) même si on les envoie dans la requête.
 
     #[Route('/api/admin/projects', name: 'api_admin_projects_create', methods: ['POST'])]
     public function create(#[MapRequestPayload] CreateProjectDTO $dto): JsonResponse

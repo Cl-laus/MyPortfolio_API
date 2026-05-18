@@ -57,14 +57,11 @@ class ImageManager
                 throw new \DomainException('Erreur lors de l\'upload du fichier.');
             }
 
-            // Validation du type MIME : on lit le contenu réel du fichier (pas l'extension).
-            // Empêche d'uploader un fichier PHP ou exécutable déguisé en image.
             $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
             if (!in_array($file->getMimeType(), $allowedMimeTypes, true)) {
                 throw new \DomainException('Format non autorisé. Formats acceptés : JPG, PNG, GIF, WebP, SVG.');
             }
 
-            // Limite la taille pour éviter de saturer le serveur.
             if ($file->getSize() > 5 * 1024 * 1024) {
                 throw new \DomainException('La taille maximale par fichier est de 5MB.');
             }
