@@ -1,7 +1,7 @@
 services:
     App\:
-        resource: '../../src/'
+        resource: '../../../src/'
         exclude:
-            - '../../src/DataFixtures/'
-            - '../../src/Entity/'
-            - '../../src/Kernel.php'
+            - '../../../src/DataFixtures/'
+            - '../../../src/Entity/'
+            - '../../../src/Kernel.php'
