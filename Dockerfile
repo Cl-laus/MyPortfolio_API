@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     zip \
     curl \
+    libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 
@@ -23,6 +24,9 @@ RUN docker-php-ext-install \
     pdo_mysql \
     zip \
     opcache
+
+# Extension MongoDB — nécessite le driver C via PECL
+RUN pecl install mongodb && docker-php-ext-enable mongodb
 
 
 # Installation de Composer depuis l'image officielle

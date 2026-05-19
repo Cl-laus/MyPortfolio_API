@@ -7,6 +7,7 @@ use App\Entity\Project;
 use App\Repository\ProjectRepository;
 use App\Services\ImageManager;
 use App\Services\ProjectManager;
+use App\Services\VisitLogger;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -20,7 +21,8 @@ final class ProjectController extends AbstractController
     public function __construct(
         private ProjectRepository $projectRepository,
         private ProjectManager $projectManager,
-        private ImageManager $imageManager
+        private ImageManager $imageManager,
+        private VisitLogger $visitLogger
     ) {}
 
     #[Route('/api/projects', name: 'api_projects_list', methods: ['GET'])]
@@ -40,6 +42,9 @@ final class ProjectController extends AbstractController
     #[Route('/api/projects/{id}', name: 'api_projects_detail', methods: ['GET'], requirements: ['id' => Requirement::DIGITS])]
     public function showDetail(#[MapEntity] Project $project): JsonResponse
     {
+        // Enregistre la visite dans MongoDB (fail-safe si MongoDB indisponible)
+        $this->visitLogger->logVisit($project->getId());
+
         return $this->json($project, 200, [], ['groups' => 'project:read']);
     }
 
