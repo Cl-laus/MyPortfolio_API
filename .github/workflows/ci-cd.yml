@@ -89,4 +89,3 @@ jobs:
             docker exec mon-portfolio-app-1 composer install --no-dev --optimize-autoloader
             docker exec mon-portfolio-app-1 php bin/console cache:clear --env=prod
             docker exec mon-portfolio-app-1 php bin/console cache:warmup --env=prod
-            docker restart mon-portfolio-web-1
