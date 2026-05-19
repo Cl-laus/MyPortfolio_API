@@ -25,6 +25,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       # Installation de PHP avec les extensions nécessaires à Symfony.
       - name: Setup PHP 8.4
@@ -33,10 +35,18 @@ jobs:
           php-version: '8.4'
           extensions: intl, pdo, zip, opcache, sqlite3, mongodb
 
-      # composer update pour prendre en compte le nouveau paquet mongodb/mongodb
-      # (le composer.lock sera mis à jour sur le VPS au prochain déploiement)
-      - name: Install dependencies
-        run: composer update --no-interaction --prefer-dist
+      # Si composer.lock est désynchronisé avec composer.json,
+      # on le met à jour et on le commit automatiquement.
+      # Le [skip ci] dans le message évite une boucle infinie.
+      - name: Mettre à jour composer.lock si nécessaire
+        run: |
+          composer install --no-interaction --prefer-dist 2>/dev/null || \
+          (composer update --no-interaction --prefer-dist && \
+           git config user.name "github-actions[bot]" && \
+           git config user.email "github-actions[bot]@users.noreply.github.com" && \
+           git add composer.lock && \
+           git diff --staged --quiet || git commit -m "chore: mettre à jour composer.lock [skip ci]" && \
+           git push)
 
       # Génération d'une paire de clés JWT temporaires pour les tests.
       # Les clés de production restent sur le VPS, jamais dans le repo.
@@ -60,7 +70,7 @@ jobs:
           APP_ENV: test
         run: php bin/console doctrine:fixtures:load --env=test --no-interaction
 
-      # Lancement des 7 tests (3 unitaires + 4 fonctionnels).
+      # Lancement des tests (3 unitaires + 4 fonctionnels + 1 stats).
       - name: Run PHPUnit
         env:
           APP_ENV: test
@@ -86,6 +96,6 @@ jobs:
             cd /var/www/mon-portfolio
             git pull origin main
             docker compose up -d --build
-            docker exec mon-portfolio-app-1 composer update --no-dev --optimize-autoloader --no-interaction
+            docker exec mon-portfolio-app-1 composer install --no-dev --optimize-autoloader
             docker exec mon-portfolio-app-1 php bin/console cache:clear --env=prod
             docker exec mon-portfolio-app-1 php bin/console cache:warmup --env=prod
