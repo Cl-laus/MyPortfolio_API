@@ -1,30 +1,35 @@
 <?php
 namespace App\Services;
 
-use MongoDB\Client;
-use MongoDB\Collection;
+use MongoDB\Driver\BulkWrite;
+use MongoDB\Driver\Command;
+use MongoDB\Driver\Manager;
 use MongoDB\BSON\UTCDateTime;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
  * Enregistre les visites de projets dans MongoDB.
- * Choix NoSQL justifié : événements append-only, pas de jointures, schéma libre.
- * Fail-safe : si MongoDB est indisponible, les visites ne sont pas loggées
- * mais l'API continue de fonctionner normalement.
+ *
+ * Utilise directement le driver PHP ext-mongodb (comme pdo_mysql pour MySQL) —
+ * aucun package composer supplémentaire, aucune modification du composer.lock.
+ *
+ * Fail-safe : si MongoDB est indisponible, l'API continue sans erreur.
  */
 class VisitLogger
 {
-    private ?Collection $collection = null;
+    private ?Manager $manager = null;
+
+    // Base MongoDB : "portfolio", collection : "project_visits"
+    private string $database   = 'portfolio';
+    private string $collection = 'project_visits';
 
     public function __construct(
         #[Autowire('%env(MONGODB_URL)%')]
         string $mongodbUrl
     ) {
         try {
-            $client = new Client($mongodbUrl);
-            // Base : "portfolio", collection : "project_visits"
-            $this->collection = $client->portfolio->project_visits;
-        } catch (\Exception $e) {
+            $this->manager = new Manager($mongodbUrl);
+        } catch (\Exception) {
             // MongoDB indisponible — on continue sans logger
         }
     }
@@ -32,16 +37,21 @@ class VisitLogger
     // Enregistre une visite pour le projet donné
     public function logVisit(int $projectId): void
     {
-        if ($this->collection === null) {
+        if ($this->manager === null) {
             return;
         }
 
         try {
-            $this->collection->insertOne([
+            $bulk = new BulkWrite();
+            $bulk->insert([
                 'project_id' => $projectId,
                 'visited_at' => new UTCDateTime(),
             ]);
-        } catch (\Exception $e) {
+            $this->manager->executeBulkWrite(
+                $this->database . '.' . $this->collection,
+                $bulk
+            );
+        } catch (\Exception) {
             // Silent fail — ne pas casser la réponse API si MongoDB plante
         }
     }
@@ -49,21 +59,27 @@ class VisitLogger
     // Retourne le nombre de visites groupé par projet, trié par le plus visité
     public function getStatsByProject(): array
     {
-        if ($this->collection === null) {
+        if ($this->manager === null) {
             return [];
         }
 
         try {
-            $cursor = $this->collection->aggregate([
-                ['$group' => ['_id' => '$project_id', 'visits' => ['$sum' => 1]]],
-                ['$sort'  => ['visits' => -1]],
+            $command = new Command([
+                'aggregate' => $this->collection,
+                'pipeline'  => [
+                    ['$group' => ['_id' => '$project_id', 'visits' => ['$sum' => 1]]],
+                    ['$sort'  => ['visits' => -1]],
+                ],
+                'cursor' => new \stdClass(),
             ]);
+
+            $cursor = $this->manager->executeCommand($this->database, $command);
 
             $stats = [];
             foreach ($cursor as $row) {
                 $stats[] = [
-                    'project_id' => $row['_id'],
-                    'visits'     => $row['visits'],
+                    'project_id' => $row->_id,
+                    'visits'     => $row->visits,
                 ];
             }
 

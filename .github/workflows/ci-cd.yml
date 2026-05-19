@@ -25,28 +25,18 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       # Installation de PHP avec les extensions nécessaires à Symfony.
+      # mongodb = ext-mongodb, driver bas niveau fourni par PECL (pas de package composer).
       - name: Setup PHP 8.4
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
           extensions: intl, pdo, zip, opcache, sqlite3, mongodb
 
-      # Si composer.lock est désynchronisé avec composer.json,
-      # on le met à jour et on le commit automatiquement.
-      # Le [skip ci] dans le message évite une boucle infinie.
-      - name: Mettre à jour composer.lock si nécessaire
-        run: |
-          composer install --no-interaction --prefer-dist 2>/dev/null || \
-          (composer update --no-interaction --prefer-dist && \
-           git config user.name "github-actions[bot]" && \
-           git config user.email "github-actions[bot]@users.noreply.github.com" && \
-           git add composer.lock && \
-           git diff --staged --quiet || git commit -m "chore: mettre à jour composer.lock [skip ci]" && \
-           git push)
+      # Installation des dépendances (composer.lock garantit les mêmes versions qu'en prod).
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
 
       # Génération d'une paire de clés JWT temporaires pour les tests.
       # Les clés de production restent sur le VPS, jamais dans le repo.
