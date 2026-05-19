@@ -7,19 +7,12 @@ use MongoDB\Driver\Manager;
 use MongoDB\BSON\UTCDateTime;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
-/**
- * Enregistre les visites de projets dans MongoDB.
- *
- * Utilise directement le driver PHP ext-mongodb (comme pdo_mysql pour MySQL) —
- * aucun package composer supplémentaire, aucune modification du composer.lock.
- *
- * Fail-safe : si MongoDB est indisponible, l'API continue sans erreur.
- */
+// Enregistre les visites de projets dans MongoDB.
+// Fail-safe : si MongoDB est indisponible, l'API continue normalement.
 class VisitLogger
 {
     private ?Manager $manager = null;
 
-    // Base MongoDB : "portfolio", collection : "project_visits"
     private string $database   = 'portfolio';
     private string $collection = 'project_visits';
 
@@ -30,7 +23,7 @@ class VisitLogger
         try {
             $this->manager = new Manager($mongodbUrl);
         } catch (\Exception) {
-            // MongoDB indisponible — on continue sans logger
+            // MongoDB indisponible
         }
     }
 
@@ -52,7 +45,7 @@ class VisitLogger
                 $bulk
             );
         } catch (\Exception) {
-            // Silent fail — ne pas casser la réponse API si MongoDB plante
+            // Silent fail
         }
     }
 
@@ -84,7 +77,7 @@ class VisitLogger
             }
 
             return $stats;
-        } catch (\Exception $e) {
+        } catch (\Exception) {
             return [];
         }
     }

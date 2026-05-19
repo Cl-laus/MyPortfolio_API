@@ -27,7 +27,6 @@ jobs:
         uses: actions/checkout@v4
 
       # Installation de PHP avec les extensions nécessaires à Symfony.
-      # mongodb = ext-mongodb, driver bas niveau fourni par PECL (pas de package composer).
       - name: Setup PHP 8.4
         uses: shivammathur/setup-php@v2
         with:

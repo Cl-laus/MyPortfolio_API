@@ -25,7 +25,7 @@ RUN docker-php-ext-install \
     zip \
     opcache
 
-# Extension MongoDB — nécessite le driver C via PECL
+# Extension MongoDB — driver C installé via PECL
 RUN pecl install mongodb && docker-php-ext-enable mongodb
 
 
