@@ -33,9 +33,10 @@ jobs:
           php-version: '8.4'
           extensions: intl, pdo, zip, opcache, sqlite3, mongodb
 
-      # Installation des dépendances (composer.lock garantit les mêmes versions qu'en prod).
+      # composer update pour prendre en compte le nouveau paquet mongodb/mongodb
+      # (le composer.lock sera mis à jour sur le VPS au prochain déploiement)
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist
+        run: composer update --no-interaction --prefer-dist
 
       # Génération d'une paire de clés JWT temporaires pour les tests.
       # Les clés de production restent sur le VPS, jamais dans le repo.
@@ -85,6 +86,6 @@ jobs:
             cd /var/www/mon-portfolio
             git pull origin main
             docker compose up -d --build
-            docker exec mon-portfolio-app-1 composer install --no-dev --optimize-autoloader
+            docker exec mon-portfolio-app-1 composer update --no-dev --optimize-autoloader --no-interaction
             docker exec mon-portfolio-app-1 php bin/console cache:clear --env=prod
             docker exec mon-portfolio-app-1 php bin/console cache:warmup --env=prod
