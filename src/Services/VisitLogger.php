@@ -8,7 +8,6 @@ use MongoDB\BSON\UTCDateTime;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 // Enregistre les visites de projets dans MongoDB.
-// Fail-safe : si MongoDB est indisponible, l'API continue normalement.
 class VisitLogger
 {
     private ?Manager $manager = null;

@@ -14,7 +14,6 @@ security:
         dev:
             pattern: ^/(_profiler|_wdt|assets|build)/
             security: false
-
         # Firewall de connexion : reçoit { username, password }, retourne un token JWT.
         # stateless = pas de session côté serveur, tout est dans le token.
         login:

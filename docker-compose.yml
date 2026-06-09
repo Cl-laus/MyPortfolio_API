@@ -1,6 +1,5 @@
 services:
-
-  # Service PHP (ton application Symfony)
+  # Service PHP 
   app:
     build: .
     volumes:
@@ -13,8 +12,6 @@ services:
     depends_on:
       - database
       - mongodb
-
-
   # Serveur web Nginx
   web:
     image: nginx:alpine
@@ -26,15 +23,11 @@ services:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - app
-
-
-  # Base de données MongoDB — stocke les statistiques de visites
+  # Base de données MongoDB 
   mongodb:
     image: mongo:7
     volumes:
       - mongo_data:/data/db
-
-
   # Base de données MySQL
   database:
     image: mysql:8.0
@@ -52,8 +45,6 @@ services:
       --max-connections=50
       --performance-schema=OFF
     mem_limit: ${MYSQL_MEM_LIMIT:-512m}
-
-
 volumes:
   db_data:
   uploads_data:

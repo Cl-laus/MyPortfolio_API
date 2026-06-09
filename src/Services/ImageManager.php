@@ -35,35 +35,28 @@ class ImageManager
         if (empty($files)) {
             throw new \DomainException('Aucune image fournie.');
         }
-
         // 2. Validation : maximum 10 fichiers
         if (count($files) > 10) {
             throw new \DomainException('Maximum 10 images par requête.');
         }
-
         // 3. Vérifier que le projet existe via son ID
         $project = $this->projectRepository->find($projectId);
         if (! $project) {
             throw new \DomainException('Projet introuvable.');
         }
-
         // 4. Valider chaque fichier
         foreach ($files as $file) {
             if (! $file instanceof UploadedFile) {
                 throw new \DomainException('Fichier invalide détecté.');
             }
-
             if (! $file->isValid()) {
                 throw new \DomainException('Erreur lors de l\'upload du fichier.');
             }
-
-            // Vérifie le type réel du fichier (pas juste l'extension).
-            // Empêche d'uploader un fichier .php renommé en .jpg par exemple.
+            // Vérifie le type réel du fichier
             $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
             if (!in_array($file->getMimeType(), $allowedMimeTypes, true)) {
                 throw new \DomainException('Format non autorisé. Formats acceptés : JPG, PNG, GIF, WebP, SVG.');
             }
-
             // 5 MB max par fichier
             if ($file->getSize() > 5 * 1024 * 1024) {
                 throw new \DomainException('La taille maximale par fichier est de 5MB.');

@@ -60,7 +60,7 @@ class ProjectManager
                 $dtoOrder
             );
 
-            // 🔥 IMPORTANT : appliquer le nouvel ordre au projet courant
+            // appliquer le nouvel ordre au projet courant
             $project->setDisplayOrder($dtoOrder);
         }
 
